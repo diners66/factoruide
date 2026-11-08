@@ -67,6 +67,9 @@ export interface Params {
   max_quest_above: number;
   progression: string;
   progression_margin?: number | null;
+  /** Never a mob above the character's level, none more than `levels_below` under it. */
+  strict_levels: boolean;
+  levels_below: number;
   pack_power?: number | null;
   elite_pull_levels: number;
   pvp_quests: boolean;
