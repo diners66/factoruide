@@ -1471,6 +1471,22 @@ do
     C_QuestLog.GetAllCompletedQuestIDs, UnitLevel = quests, level
     FG.Profile:Snapshot()
 end
+-- The same for the spell book: none read past level 1 is one the game has not given yet.
+do
+    local level = UnitLevel
+    local book = {}
+    UnitLevel = function() return 16 end
+    GetNumSpellTabs = function() return 1 end
+    GetSpellTabInfo = function() return "General", nil, 0, #book end
+    GetSpellBookItemInfo = function(i) return "SPELL", book[i] end
+    profile.spells = {}
+    FG.Profile:Snapshot()
+    book = { 686, 172 }
+    FG.Profile:Snapshot(false)
+    assert(#profile.spells == 2, "spells read again the next minute: " .. #profile.spells)
+    UnitLevel, GetNumSpellTabs, GetSpellTabInfo, GetSpellBookItemInfo = level, nil, nil, nil
+    FG.Profile:Snapshot()
+end
 print("profile kept from emptied data ok")
 
 -- Reputations: every faction of the panel, those under a collapsed header too (opened for the

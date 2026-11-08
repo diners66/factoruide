@@ -145,12 +145,14 @@ end
 
 --- Read part `name` with `fn` when `full` or the game said it changed (else keep it as it is).
 --- Read again by the next snapshot when the game gave nothing (see `NotEmptied`), or no quest
---- done past level 1 (the list not given yet).
+--- done nor spell learned past level 1 (the lists not given yet).
 local function Changed(name, fn, full)
     if not (full or changed[name]) then return profile[name] end
     local value = Part(name, fn)
     local empty = type(value) == "table" and next(value) == nil
-    changed[name] = empty and (next(profile[name] or {}) ~= nil or (name == "completed" and (UnitLevel("player") or 0) > 1))
+    -- Past level 1 a character has done quests and learned spells: none is a list not given yet.
+    local pastOne = (name == "completed" or name == "spells") and (UnitLevel("player") or 0) > 1
+    changed[name] = empty and (next(profile[name] or {}) ~= nil or pastOne)
     return NotEmptied(name, value)
 end
 
