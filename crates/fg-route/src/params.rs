@@ -84,8 +84,8 @@ pub struct Params {
     pub farm_below: i64,
     pub farm_above: i64,
     /// Quests of the route whose NPC is within this distance of a stop are taken and turned in
-    /// there, as a player does at a quest hub (0: only at their own stop). 40 yards in our fork:
-    /// a hub's quests are all taken on arriving, before setting off to do them.
+    /// there, as a player does at a quest hub (0: only at their own stop). 350 yards in our fork:
+    /// the quests of a hub and around it are all taken on arriving, before setting off to do them.
     pub camp_radius: f64,
     /// Allow quests whose objectives involve elite mobs.
     pub allow_elite: bool,
@@ -536,7 +536,7 @@ impl Default for Params {
             farm_share: 0.8,
             farm_below: 3,
             farm_above: 1,
-            camp_radius: 40.0,
+            camp_radius: 350.0,
             allow_elite: false,
             all_class_quests: false,
             pvp_quests: false,

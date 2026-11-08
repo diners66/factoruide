@@ -23,7 +23,11 @@ fn generates_a_guide(edition: Edition, race: &str, class: &str, start: &str) {
     let route = planner.construct(|_| {});
     assert!(planner.simulate(&route, None).is_some(), "the generated route replays");
     let guide = fg_route::export::build(&planner, &p.profile, &route);
-    let level = guide.steps.iter().map(|s| s.level).max().unwrap_or(0);
+    // The level the character reaches (the guide's steps say the level each one starts at: the
+    // last turn-ins, taken at hand in a quest hub, may bring the target with no step after them).
+    let mut trace = Vec::new();
+    planner.simulate_full(&route, Some(&mut trace));
+    let level = trace.iter().map(|t| t.level).max().unwrap_or(0);
     assert!(level >= 5, "{edition:?} {race} {class}: reaches the target");
     assert!(guide.quests > 0, "{edition:?} {race} {class}: follows quests");
 }

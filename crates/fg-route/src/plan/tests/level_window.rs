@@ -165,7 +165,7 @@ fn farm_window_follows_strict_levels() {
 
 #[test]
 fn hub_mode_is_on_by_default() {
-    assert!((Params::default().camp_radius - 40.0).abs() < f64::EPSILON);
+    assert!((Params::default().camp_radius - 350.0).abs() < f64::EPSILON);
 }
 
 #[test]
