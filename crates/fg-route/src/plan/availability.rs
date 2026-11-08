@@ -117,6 +117,7 @@ impl Availability<'_> {
             && q.skill
                 .is_none_or(|(p, value)| self.model.professions[p].skill_at(s.level) >= value)
             && !self.gray_dead_end(s, q, i)
+            && !self.too_low(s, q, i)
     }
 
     /// A breadcrumb to quest `i` the route must do is not taken yet: taking `i` would close it
@@ -150,6 +151,33 @@ impl Availability<'_> {
             && !self.params.keep_gray
             && q.level <= gray
             && self.model.chain_top[i as usize] <= gray
+    }
+
+    /// A quest below the level window (`Params::level_window`): one of its kill objectives still
+    /// to do has all its places' mobs more than `levels_below` under the character. Not taken,
+    /// and given up in the log; a quest whose kills are done is still turned in. Mandatory quests
+    /// (class quests, those the player asked for) stay, and an imposed route takes what it says.
+    pub(crate) fn too_low(&self, s: &State, q: &Quest, i: u32) -> bool {
+        let Some(window) = self.params.level_window(s.level) else {
+            return false;
+        };
+        !q.mandatory
+            && !self.replaying
+            && q.objectives.iter().enumerate().any(|(k, o)| {
+                s.objectives[i as usize] & (1 << k) == 0
+                    && o.kills > 0.0
+                    && o.places().all(|place| place.mob_level < *window.start())
+            })
+    }
+
+    /// A place of a kill objective whose mobs are below the level window: not gone to when the
+    /// objective has others.
+    pub(crate) fn place_too_low(&self, s: &State, o: &crate::model::Objective) -> bool {
+        o.kills > 0.0
+            && self
+                .params
+                .level_window(s.level)
+                .is_some_and(|w| o.mob_level < *w.start())
     }
 
     pub(crate) fn objectives_done(&self, s: &State, i: u32) -> bool {

@@ -26,7 +26,10 @@ impl Simulator<'_> {
         }
         let open = self.trips().open_links(s);
         let mut best = (f64::INFINITY, o);
-        for place in std::iter::once(o).chain(&o.alts) {
+        // Places whose mobs are below the level window only when every place is.
+        let low = |place: &Objective| self.availability().place_too_low(s, place);
+        let all_low = o.places().all(low);
+        for place in o.places().filter(|place| all_low || !low(place)) {
             let there = self.spot_work(s, q, place);
             if there >= best.0 {
                 continue;

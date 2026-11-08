@@ -206,6 +206,7 @@ impl Simulator<'_> {
         for i in s.accepted.and_not(&s.turned) {
             let q = &self.model.quests[i];
             let hopeless = self.availability().gray_dead_end(s, q, i as u32)
+                || self.availability().too_low(s, q, i as u32)
                 || q.objectives.iter().enumerate().any(|(k, o)| {
                     s.objectives[i] & (1 << k) == 0
                         && o.dungeon_of().is_some_and(|d| !self.availability().can_be_in(s, d))

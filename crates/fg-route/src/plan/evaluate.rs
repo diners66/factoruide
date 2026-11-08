@@ -449,6 +449,9 @@ impl Planner<'_> {
             Kind::Accept if self.availability().gray_dead_end(s, self.quest(stop.index), stop.index) => {
                 "gray quest leading nowhere"
             }
+            Kind::Accept if self.availability().too_low(s, self.quest(stop.index), stop.index) => {
+                "mobs too low for the level window"
+            }
             Kind::Accept => "dungeon quest (dungeons off)",
             Kind::Objective(_) | Kind::TurnIn if !s.accepted[i] => "quest not accepted",
             Kind::Objective(_) | Kind::TurnIn if s.turned[i] => "already turned in",
