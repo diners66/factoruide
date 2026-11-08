@@ -70,8 +70,19 @@ impl Availability<'_> {
         // In the log: taken, not turned in nor given up.
         let held = |id: &i64| self.model.index.get(id).is_some_and(|&j| s.accepted[j] && !s.turned[j]);
         if init.mates.is_empty() {
+            // Starting mid-way with no history (`Initial::completed` unknown), the quests below the
+            // level window at the start are done: the window leaves them out (`too_low`), the
+            // chains they open stay. Those within it the route does itself.
+            let below = |i: usize| {
+                init.completed.is_none()
+                    && self.profile.from_level > 1
+                    && self
+                        .params
+                        .level_window(self.profile.from_level)
+                        .is_some_and(|w| self.model.quests[i].level < *w.start())
+            };
             let done = |id: &i64| match self.model.index.get(id) {
-                Some(&i) => s.rewarded(i) || known(id),
+                Some(&i) => s.rewarded(i) || known(id) || below(i),
                 // Not plannable (other class, removed, gray...): known for a character met in
                 // game, else assumed done only when starting mid-way.
                 None => init.done_outside(*id, self.profile.from_level) || known(id),

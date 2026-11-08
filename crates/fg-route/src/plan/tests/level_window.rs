@@ -234,3 +234,43 @@ fn grinding_camps_are_never_above() {
     assert!(camp(9).is_some(), "level 9 mobs: ground at");
     assert!(camp(10).is_some(), "level 10 mobs: ground at");
 }
+
+/// A level 16 character whose addon gave no quest done (an emptied profile) and a level 16 quest
+/// after a level 8 one: its history is unknown, not empty, so what is below the level window
+/// counts as done and the chain opens. With a history, it says what was done.
+#[test]
+fn unknown_history_counts_the_quests_below_as_done() {
+    use crate::job::{QuestId, StartState};
+    use crate::plan::{Kind, Outcome};
+    use crate::testing::{Q, Scenario};
+    let open = |completed: Vec<QuestId>| {
+        let p = Scenario::new()
+            .levels(16, 30)
+            .quest(Q::new(901, "Before").level(8).kill("Boar", 8, 4, 1, 50.0, 50.0))
+            .quest(
+                Q::new(902, "After")
+                    .level(16)
+                    .after(&[901])
+                    .kill("Boar", 16, 4, 1, 50.0, 50.0),
+            )
+            .start(StartState {
+                level: 16,
+                completed,
+                ..StartState::default()
+            })
+            .build();
+        let i = p.model.index[&902] as u32;
+        let stop = crate::plan::Edit::Stop {
+            stop: crate::plan::Stop::quest(i, Kind::Accept),
+            farm: false,
+            spot: None,
+        };
+        planner(&p).edit(&[stop]).steps[0].outcome
+    };
+    assert_eq!(open(vec![]), Outcome::Done, "no history at level 16: unknown");
+    assert_eq!(
+        open(vec![QuestId(999)]),
+        Outcome::Invalid("prerequisite not done"),
+        "a history without it"
+    );
+}

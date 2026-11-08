@@ -174,9 +174,19 @@ impl StartState {
             xp: self.xp.max(0),
             rested: self.rested.max(0),
             gear: self.gear.clone(),
-            completed: Some(self.completed.iter().map(|q| q.0).collect()),
+            // No quest done past level 1: a profile the game emptied (at logout on some servers'
+            // clients), not a character that did nothing. Unknown, as without a profile: what is
+            // below its level counts as done (`Initial::done_outside`).
+            completed: (!self.completed.is_empty() || self.level <= 1)
+                .then(|| self.completed.iter().map(|q| q.0).collect()),
             ..Initial::default()
         };
+        if init.completed.is_none() {
+            notes.push(format!(
+                "no quest done recorded at level {}: the quests below it count as done (save the profile again in game)",
+                self.level
+            ));
+        }
         let in_log: HashSet<QuestId> = self.log.iter().map(|q| q.id).collect();
         init.turned = self
             .completed

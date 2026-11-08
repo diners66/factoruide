@@ -217,6 +217,8 @@ export const presets: { label: string; values: Partial<Params> }[] = [
 /** Calculation presets: how much the optimization tries (its time depends on the processor). */
 export const efforts: { label: string; effort: number }[] = [
   { label: "Aperçu", effort: 0.1 },
+  // About 2.4 times faster than Normal for a route some 6% longer (a level 16-30 guide: 13 s, 18h00 against 31 s, 16h53).
+  { label: "Rapide", effort: 0.3 },
   { label: "Normal", effort: 1 },
   { label: "Poussé", effort: 3 },
 ];
