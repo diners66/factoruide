@@ -1444,6 +1444,35 @@ FG.Profile:Snapshot()
 assert(not profile.errors, "no error left")
 print("profile parts ok")
 
+-- Data the game has already emptied (at logout on some servers' clients: no quests done, no XP to
+-- the next level, nothing worn) never replaces what the profile had: the last good values stay.
+do
+    local quests, xpMax, item = C_QuestLog.GetAllCompletedQuestIDs, UnitXPMax, GetInventoryItemID
+    C_QuestLog.GetAllCompletedQuestIDs = function() return {} end
+    UnitXPMax = function() return 0 end
+    GetInventoryItemID = function() return nil end
+    fire("PLAYER_LOGOUT")
+    assert(#profile.completed == 2, "quests done kept: " .. #profile.completed)
+    assert(profile.xp_max == 400, "XP kept: " .. tostring(profile.xp_max))
+    assert(profile.gear[1] == 6125, "gear kept")
+    C_QuestLog.GetAllCompletedQuestIDs, UnitXPMax, GetInventoryItemID = quests, xpMax, item
+end
+-- A character past level 1 with no quest done read is a list the game has not given yet: read
+-- again by the next minute's snapshot, without waiting for a quest turned in.
+do
+    local quests, level = C_QuestLog.GetAllCompletedQuestIDs, UnitLevel
+    UnitLevel = function() return 16 end
+    profile.completed = {}
+    C_QuestLog.GetAllCompletedQuestIDs = function() return {} end
+    FG.Profile:Snapshot()
+    C_QuestLog.GetAllCompletedQuestIDs = function() return { 179, 233 } end
+    FG.Profile:Snapshot(false)
+    assert(#profile.completed == 2, "read again the next minute: " .. #profile.completed)
+    C_QuestLog.GetAllCompletedQuestIDs, UnitLevel = quests, level
+    FG.Profile:Snapshot()
+end
+print("profile kept from emptied data ok")
+
 -- Reputations: every faction of the panel, those under a collapsed header too (opened for the
 -- reading, closed again), headers without points of their own left out.
 local factionRows = {

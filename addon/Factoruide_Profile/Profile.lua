@@ -132,11 +132,26 @@ for event, part in pairs(CHANGED_BY) do
     FG:On(event, function() changed[part] = true end)
 end
 
+--- A list the game gives empty where the profile had one: data the game has already emptied
+--- (at logout on some servers' clients) or not given yet, never what the character has. The
+--- previous one stays.
+local function NotEmptied(name, value)
+    local before = profile[name]
+    if type(value) == "table" and next(value) == nil and type(before) == "table" and next(before) ~= nil then
+        return before
+    end
+    return value
+end
+
 --- Read part `name` with `fn` when `full` or the game said it changed (else keep it as it is).
+--- Read again by the next snapshot when the game gave nothing (see `NotEmptied`), or no quest
+--- done past level 1 (the list not given yet).
 local function Changed(name, fn, full)
     if not (full or changed[name]) then return profile[name] end
-    changed[name] = false
-    return Part(name, fn)
+    local value = Part(name, fn)
+    local empty = type(value) == "table" and next(value) == nil
+    changed[name] = empty and (next(profile[name] or {}) ~= nil or (name == "completed" and (UnitLevel("player") or 0) > 1))
+    return NotEmptied(name, value)
 end
 
 --- Record everything the app needs about the character now; `full` false (the minute's
@@ -147,6 +162,8 @@ function Profile:Snapshot(full)
     profile.errors = nil
     profile.name = FG:CharacterKey()
     Part("character", function()
+        -- No XP to the next level: the game has emptied the character (logout), keep the last one.
+        if (UnitXPMax("player") or 0) == 0 and profile.xp_max and profile.xp_max > 0 then return end
         local _, _, raceID = UnitRace("player")
         local _, classFile = UnitClass("player")
         profile.race = raceID
@@ -163,13 +180,15 @@ function Profile:Snapshot(full)
     end)
     profile.position = Part("position", function()
         local map, x, y = FG.PlayerPosition()
+        -- None outside an instance: the game has no position any more (logout), keep the last one.
+        if not x and not profile.instance then return profile.position end
         return x and { map = map, x = x, y = y } or nil
     end)
     profile.completed = Changed("completed", CompletedQuests, full)
     profile.log = Part("log", LogQuests)
     profile.professions = Part("professions", Professions)
     profile.riding = Part("riding", function() return FG.ProfessionSkill(RIDING) or 0 end)
-    profile.gear = Part("gear", Gear)
+    profile.gear = NotEmptied("gear", Part("gear", Gear))
     profile.spells = Changed("spells", Spells, full)
     profile.reputation = Changed("reputation", FG.Reputations, full)
     profile.flights = profile.flights or {}
