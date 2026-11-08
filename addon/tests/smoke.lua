@@ -1487,6 +1487,27 @@ do
     UnitLevel, GetNumSpellTabs, GetSpellTabInfo, GetSpellBookItemInfo = level, nil, nil, nil
     FG.Profile:Snapshot()
 end
+-- Clients on the modern engine (WoW Forever's): no spell tabs, the spell book's skill lines.
+do
+    C_SpellBook = {
+        GetNumSpellBookSkillLines = function() return 2 end,
+        GetSpellBookSkillLineInfo = function(line)
+            return line == 1 and { itemIndexOffset = 0, numSpellBookItems = 2 }
+                or { itemIndexOffset = 2, numSpellBookItems = 2 }
+        end,
+        GetSpellBookItemInfo = function(i, bank)
+            assert(bank == 0, "the player's spell book")
+            -- A flyout among them: not a spell.
+            local items = { { itemType = 1, spellID = 686 }, { itemType = 4, actionID = 9 },
+                { itemType = 1, spellID = 697 }, { itemType = 1, spellID = 172 } }
+            return items[i]
+        end,
+    }
+    FG.Profile:Snapshot()
+    local got = table.concat(profile.spells, ",")
+    assert(got == "686,697,172", "spells from the modern spell book: " .. got)
+    C_SpellBook = nil
+end
 print("profile kept from emptied data ok")
 
 -- Reputations: every faction of the panel, those under a collapsed header too (opened for the

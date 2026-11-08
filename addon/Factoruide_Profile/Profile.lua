@@ -65,6 +65,20 @@ end
 --- Spells of the spell book (every rank the character learned).
 local function Spells()
     local out = {}
+    -- The modern engine's spell book (WoW Forever's client): skill lines instead of tabs.
+    local book = C_SpellBook
+    if not GetNumSpellTabs and book and book.GetNumSpellBookSkillLines then
+        local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
+        local spell = Enum and Enum.SpellBookItemType and Enum.SpellBookItemType.Spell or 1
+        for line = 1, book.GetNumSpellBookSkillLines() do
+            local info = book.GetSpellBookSkillLineInfo(line)
+            for i = info.itemIndexOffset + 1, info.itemIndexOffset + info.numSpellBookItems do
+                local item = book.GetSpellBookItemInfo(i, bank)
+                if item and item.itemType == spell and item.spellID then table.insert(out, item.spellID) end
+            end
+        end
+        return out
+    end
     if not (GetNumSpellTabs and GetSpellTabInfo and GetSpellBookItemInfo) then return out end
     for tab = 1, GetNumSpellTabs() do
         local _, _, offset, count = GetSpellTabInfo(tab)
