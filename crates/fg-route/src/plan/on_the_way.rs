@@ -224,9 +224,10 @@ impl Simulator<'_> {
         let share = p.farm_share_at(s.level);
         let in_log = |q: u32| s.accepted[q as usize] && !s.turned[q as usize];
         let (mut time, mut gained, mut killed) = (0.0, 0.0, 0.0);
+        let levels = p.farm_levels(s.level);
         for m in mobs.iter() {
             let level = i64::from(m.level);
-            if level < s.level - p.farm_below || level > s.level + p.farm_above || level as f64 > reach {
+            if !levels.contains(&level) || level as f64 > reach {
                 continue;
             }
             if self.model.farm.quests(m.tag).iter().any(|&q| in_log(q)) {

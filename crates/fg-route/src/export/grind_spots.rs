@@ -175,11 +175,6 @@ fn grindable(writer: &StepWriter<'_>, step: &Step, level: i64) -> bool {
             zone: 0,
             z: step.height,
         };
-        writer
-            .planner
-            .model
-            .farm
-            .around(&p, RADIUS, level - params.farm_below..=level + params.farm_above)
-            >= MIN_MOBS
+        writer.planner.model.farm.around(&p, RADIUS, params.farm_levels(level)) >= MIN_MOBS
     })
 }

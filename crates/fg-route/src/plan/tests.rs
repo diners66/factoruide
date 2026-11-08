@@ -1328,6 +1328,8 @@ fn town_and_boars(tools: (f64, f64), ribs: (f64, f64)) -> Prepared {
                 .giver(1, tools.0, tools.1)
                 .turn_in_at(1, 52.0, 50.0),
         )
+        // The explicit takes and turn-ins this tidying moves: no hub mode (`camp_radius`).
+        .params(|p| p.camp_radius = 0.0)
         .build()
 }
 
@@ -1475,6 +1477,8 @@ fn elwynn_trips() -> Prepared {
                 y: 45.0,
             },
         )))
+        // The explicit takes and turn-ins this tidying moves: no hub mode (`camp_radius`).
+        .params(|p| p.camp_radius = 0.0)
         .build()
 }
 
@@ -1651,6 +1655,8 @@ fn town_and_camp() -> Prepared {
         )
         .quest(town(2, "Tools"))
         .quest(town(3, "Supplies"))
+        // The explicit takes and turn-ins this tidying moves: no hub mode (`camp_radius`).
+        .params(|p| p.camp_radius = 0.0)
         .build()
 }
 

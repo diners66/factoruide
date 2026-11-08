@@ -84,8 +84,8 @@ pub struct Params {
     pub farm_below: i64,
     pub farm_above: i64,
     /// Quests of the route whose NPC is within this distance of a stop are taken and turned in
-    /// there, as a player does at a quest hub (0: only at their own stop). Off by default: the
-    /// route says every take and turn-in itself, as the guide editor shows them.
+    /// there, as a player does at a quest hub (0: only at their own stop). 40 yards in our fork:
+    /// a hub's quests are all taken on arriving, before setting off to do them.
     pub camp_radius: f64,
     /// Allow quests whose objectives involve elite mobs.
     pub allow_elite: bool,
@@ -536,7 +536,7 @@ impl Default for Params {
             farm_share: 0.8,
             farm_below: 3,
             farm_above: 1,
-            camp_radius: 0.0,
+            camp_radius: 40.0,
             allow_elite: false,
             all_class_quests: false,
             pvp_quests: false,
@@ -784,6 +784,16 @@ impl Params {
     /// to its level. None when the window is off.
     pub fn level_window(&self, level: i64) -> Option<std::ops::RangeInclusive<i64>> {
         self.strict_levels.then(|| level - self.levels_below..=level)
+    }
+
+    /// Mob levels farmed on the way at `level` (`farm_below`, `farm_above`), within the level
+    /// window when it is on.
+    pub fn farm_levels(&self, level: i64) -> std::ops::RangeInclusive<i64> {
+        let (low, high) = (level - self.farm_below, level + self.farm_above);
+        match self.level_window(level) {
+            Some(w) => low.max(*w.start())..=high.min(*w.end()),
+            None => low..=high,
+        }
     }
 
     /// Power a pack (three kills or more) requires on top of a lone target of the same level:

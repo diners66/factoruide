@@ -150,3 +150,20 @@ fn low_place_skipped_for_a_place_in_window() {
     });
     assert_eq!(visited, Some(far_pos));
 }
+
+#[test]
+fn farm_window_follows_strict_levels() {
+    let mut p = Params {
+        farm_above: 2,
+        farm_below: 6,
+        ..Params::default()
+    };
+    assert_eq!(p.farm_levels(20), 16..=20);
+    p.strict_levels = false;
+    assert_eq!(p.farm_levels(20), 14..=22);
+}
+
+#[test]
+fn hub_mode_is_on_by_default() {
+    assert!((Params::default().camp_radius - 40.0).abs() < f64::EPSILON);
+}

@@ -288,9 +288,11 @@ fn moonglade_teaches_teleport_before_completing_its_quest() {
             matches!(edited.steps[2].outcome, Outcome::Done),
             "the pending Moonglade quest survives continuation"
         );
+        // Taken here, or already at the turn-in with the quest hubs (`camp_radius`).
         assert!(
-            matches!(edited.steps[3].outcome, Outcome::Done),
-            "the successor opens after the real turn-in"
+            matches!(edited.steps[3].outcome, Outcome::Done | Outcome::Skipped("done before")),
+            "the successor opens after the real turn-in: {:?}",
+            edited.steps[3].outcome
         );
     }
 }
