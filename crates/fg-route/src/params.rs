@@ -786,6 +786,27 @@ impl Params {
         self.strict_levels.then(|| level - self.levels_below..=level)
     }
 
+    /// Levels a dungeon is run at around its monsters' level (`dungeon_from`, `dungeon_to`).
+    /// With the level window, never below the monsters' level nor more than `levels_below` above.
+    pub fn dungeon_levels(&self) -> (i64, i64) {
+        if self.strict_levels {
+            (self.dungeon_from.max(0), self.dungeon_to.min(self.levels_below))
+        } else {
+            (self.dungeon_from, self.dungeon_to)
+        }
+    }
+
+    /// The camps ground at `level` (`FarmMobs::camps`: mobs of that level give or take one): one
+    /// level lower with the level window, never a mob above the character; at level 1, nothing
+    /// is lower (the camp of level 1 may hold a few of level 2).
+    pub fn camp_level(&self, level: i64) -> i64 {
+        if self.strict_levels && level > 1 {
+            level - 1
+        } else {
+            level
+        }
+    }
+
     /// Mob levels farmed on the way at `level` (`farm_below`, `farm_above`), within the level
     /// window when it is on.
     pub fn farm_levels(&self, level: i64) -> std::ops::RangeInclusive<i64> {

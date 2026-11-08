@@ -13,7 +13,8 @@ const below = Number(belowArg ?? 4);
 const guide = JSON.parse(fs.readFileSync(file, "utf8"));
 const steps = guide.steps ?? guide.route?.steps ?? guide.plan ?? [];
 
-const kills = steps.filter((s) => s.kind?.toLowerCase() === "objective" && s.mob_level != null);
+// Kill objectives, and accepts started by a drop (their step carries the dropping mob's level).
+const kills = steps.filter((s) => ["objective", "accept"].includes(s.kind?.toLowerCase()) && s.mob_level != null);
 const out = kills.filter((s) => s.mob_level > s.level || s.mob_level < s.level - below);
 for (const s of out) {
   const why = s.mob_level > s.level ? "above" : "too low";

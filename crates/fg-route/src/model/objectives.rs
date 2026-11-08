@@ -74,6 +74,7 @@ impl Objective {
             spots: None,
             guard: Guard::default(),
             beside_giver: false,
+            own_side: false,
             item: false,
             alts: vec![],
             after: 0,
@@ -491,6 +492,7 @@ impl QuestBuilder<'_> {
             text: text.clone().unwrap_or_else(|| format!("Kill {name} x{kills}")),
             kills,
             mob_level: entities.npc_level(target),
+            own_side: entities.own_side.contains(&target),
             elite,
             count: kills,
             mobs: credited

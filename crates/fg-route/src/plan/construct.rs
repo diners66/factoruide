@@ -90,7 +90,7 @@ impl Planner<'_> {
                             if self.availability().objective_open(&s, i, k) && o.kills > 0.0 && o.dungeon_of().is_none()
                             {
                                 options.push((
-                                    self.combat().level_at(q, o, s.might()),
+                                    self.combat().level_of(q, o, s.might()),
                                     Stop::quest(i, Kind::Objective(k as u8)),
                                 ));
                             }
@@ -102,7 +102,7 @@ impl Planner<'_> {
                         // ahead): its giver in reach, its mobs not yet.
                         let hardest = (q.objectives.iter())
                             .filter(|o| o.dungeon_of().is_none())
-                            .map(|o| self.combat().level_at(q, o, s.might()))
+                            .map(|o| self.combat().level_of(q, o, s.might()))
                             .max()
                             .unwrap_or(0);
                         let gate = gate.max(hardest - 1);

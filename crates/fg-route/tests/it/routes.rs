@@ -1039,6 +1039,7 @@ fn gathering_next_to_kills_overlaps_them() {
             }),
             guard: Guard::default(),
             beside_giver: false,
+            own_side: false,
             item: false,
             alts: vec![],
             after: 0,
@@ -2463,6 +2464,7 @@ fn kills_east_of_start(p: &Prepared, dx: f64, kills: f64, mob_level: i64) -> Obj
         spots: None,
         guard: Guard::default(),
         beside_giver: false,
+        own_side: false,
         item: false,
         alts: vec![],
         after: 0,
@@ -3655,7 +3657,9 @@ fn ruins_of_lordaeron_is_run_at_the_games_levels() {
         params: Some(
             overrides
                 .params
-                .with_overrides(&["progression=normal".to_owned()])
+                // The game's range, read with the normal profile's window (not the level window,
+                // which runs a dungeon from its monsters' level).
+                .with_overrides(&["progression=normal".to_owned(), "strict_levels=false".to_owned()])
                 .unwrap(),
         ),
         ..request("undead", "warrior", 30, &[])

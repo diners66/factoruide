@@ -88,7 +88,7 @@ pub(crate) fn settle(
         dungeons,
         quests,
         levels,
-        (params.dungeon_from, params.dungeon_to),
+        params.dungeon_levels(),
         params.edition.rules().max_level,
     );
     super::settle_dungeons(dungeons, quests, profile, params.edition.rules().max_level);

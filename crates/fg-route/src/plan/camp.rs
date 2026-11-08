@@ -71,12 +71,16 @@ impl Simulator<'_> {
         let key = (s.pos.continent, [s.pos.x.to_bits(), s.pos.y.to_bits()], s.level);
         let known = self.memo.near_camps.borrow().get(&key).cloned();
         let near = known.unwrap_or_else(|| {
-            let mut camps: Vec<(f64, usize)> = (self.model.farm.camps(s.pos.continent, s.level).iter())
-                .enumerate()
-                .map(|(i, c)| (s.pos.dist(c), i))
-                .collect();
+            let mut camps: Vec<(f64, usize)> = (self
+                .model
+                .farm
+                .camps(s.pos.continent, self.params.camp_level(s.level))
+                .iter())
+            .enumerate()
+            .map(|(i, c)| (s.pos.dist(c), i))
+            .collect();
             camps.sort_unstable_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
-            let all = self.model.farm.camps(s.pos.continent, s.level);
+            let all = self.model.farm.camps(s.pos.continent, self.params.camp_level(s.level));
             let near: Rc<[Pos]> = camps.iter().take(CAMP_CHOICES).map(|&(_, i)| all[i]).collect();
             let mut memo = self.memo.near_camps.borrow_mut();
             if memo.len() >= CAMP_MEMO {

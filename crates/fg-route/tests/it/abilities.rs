@@ -67,3 +67,38 @@ preset!(
     "druid",
     "forever_zephras"
 );
+
+/// The level window (on by default) on the draenei's start: the route still reaches its target,
+/// and a friendly survivor to rescue ("Kill Draenei Survivor", a kill credit on the character's
+/// side) is no fight: no grinding to its level first.
+#[test]
+fn tbc_draenei_shaman_in_the_level_window() {
+    use fg_route::export::StepKind;
+    let conn = Fixture::new(Edition::Tbc).file("tbc_ammen").open();
+    let overrides = Overrides::load_edition(&repo().join("overrides"), Edition::Tbc).unwrap();
+    let request: PlanRequest = serde_json::from_value(serde_json::json!({
+        "race":"draenei","class":"shaman","from_level":1,"to_level":5
+    }))
+    .unwrap();
+    let p = job::prepare(&conn, &overrides, &request, &|_| {}).unwrap();
+    assert!(p.params.strict_levels);
+    let planner = Planner::new(&p.model, &p.world, &p.params, &p.profile);
+    let route = planner.construct(|_| {});
+    let guide = fg_route::export::build(&planner, &p.profile, &route);
+    let mut trace = Vec::new();
+    planner
+        .simulate_full(&route, Some(&mut trace))
+        .expect("the route replays");
+    let reached = trace.iter().map(|t| t.level).max().unwrap_or(0);
+    assert!(reached >= 5, "reaches the target: level {reached}");
+    let rescue = (guide.steps.iter())
+        .position(|s| s.kind == StepKind::Objective && s.quest_name.as_deref() == Some("Rescue the Survivors!"))
+        .expect("the rescue");
+    let before = &guide.steps[rescue - 1];
+    assert!(before.kind != StepKind::Grind, "no grinding before the rescue");
+    assert!(
+        guide.steps[rescue].level < 3,
+        "rescued at level {}",
+        guide.steps[rescue].level
+    );
+}

@@ -265,6 +265,9 @@ pub struct Objective {
     /// An object used right beside the quest's giver or turn-in, no elite around (the campfire
     /// to sit at next to Kaga Wildhoof): it requires no power, as talking to them.
     pub beside_giver: bool,
+    /// Kills credited on an NPC of the character's side (rescued, healed: "Kill Draenei
+    /// Survivor"): no fight, outside the level window (`Params::strict_levels`).
+    pub own_side: bool,
     /// An item to bring back: it takes a bag slot until the turn-in.
     pub item: bool,
     /// The other places it can be done (other groups of its mobs or objects), each with what

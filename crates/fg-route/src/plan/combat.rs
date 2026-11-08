@@ -86,13 +86,24 @@ impl Combat<'_> {
     /// the objective's (`need`), and with the level window no mob of it (nor of its guards) is
     /// above the character. What the construction, the worth of a quest and the regions ask, so
     /// they agree with the level the simulation waits for (`level_at`).
+    /// With the level window, any of its places (`Objective::alts`) will do: the character goes
+    /// to one it takes on (`Simulator::spot`).
     pub fn fights(self, q: &Quest, o: &Objective, level: i64, might: Might) -> bool {
+        if self.params.strict_levels {
+            o.places().any(|place| self.fights_at(q, place, level, might))
+        } else {
+            self.fights_at(q, o, level, might)
+        }
+    }
+
+    /// The same at one place of the objective.
+    fn fights_at(self, q: &Quest, o: &Objective, level: i64, might: Might) -> bool {
         if o.beside_giver {
             return true;
         }
         self.need(q, o) <= self.params.reach(level, might)
             && (!self.params.strict_levels
-                || (o.kills <= 0.0 || o.mob_level <= level) && Self::not_above(&o.guard, level))
+                || (o.kills <= 0.0 || o.own_side || o.mob_level <= level) && Self::not_above(&o.guard, level))
     }
 
     /// The same for a place guarded by `g`.
@@ -121,6 +132,19 @@ impl Combat<'_> {
         self.level_at(q, &q.objectives[k as usize], might)
     }
 
+    /// The lowest level at which the character takes on objective `o` of `q` at one of its places
+    /// with the level window (the simulation goes to one it takes on), at its own place without.
+    pub fn level_of(self, q: &Quest, o: &Objective, might: Might) -> i64 {
+        if self.params.strict_levels {
+            o.places()
+                .map(|place| self.level_at(q, place, might))
+                .min()
+                .unwrap_or(0)
+        } else {
+            self.level_at(q, o, might)
+        }
+    }
+
     /// The same for objective `o` of `q` at one of its places (`Objective::alts`).
     pub fn level_at(self, q: &Quest, o: &Objective, might: Might) -> i64 {
         let need = self.need(q, o);
@@ -128,7 +152,7 @@ impl Combat<'_> {
             0
         } else {
             let mut level = self.params.level_for(need, might);
-            if o.kills > 0.0 {
+            if o.kills > 0.0 && !o.own_side {
                 level = self.at_mob_level(level, o.mob_level);
             }
             if o.guard.count > 0 {
@@ -163,7 +187,7 @@ impl Combat<'_> {
     pub fn grind_rate(self, level: i64, bonus: f64, at: &Pos) -> f64 {
         // Group: each kill is faster, its XP shared.
         let content = xp::content_at(at.continent, at.zone);
-        self.rules().mob_xp(level, level, content) * self.params.group_xp_share()
+        self.rules().mob_xp(level, self.params.camp_level(level), content) * self.params.group_xp_share()
             / (self.params.grind_kill_time * crate::params::power_speed(bonus) / self.params.group_damage())
     }
 }

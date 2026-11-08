@@ -167,3 +167,70 @@ fn farm_window_follows_strict_levels() {
 fn hub_mode_is_on_by_default() {
     assert!((Params::default().camp_radius - 40.0).abs() < f64::EPSILON);
 }
+
+#[test]
+fn own_side_low_quest_stays() {
+    use crate::plan::{Kind, Outcome};
+    // A friendly NPC of level 5 to rescue: no fight, so not too low at 15.
+    let mut p = at_level_15(5);
+    p.model.quests[0].objectives[0].own_side = true;
+    let report = planner(&p).edit(&[stop(Kind::Accept)]);
+    assert_eq!(report.steps[0].outcome, Outcome::Done);
+}
+
+#[test]
+fn start_drop_too_low_is_not_taken() {
+    use crate::plan::{Kind, Outcome};
+    // Objective mobs in the window, but the item starting it drops from a level 5 mob.
+    let mut p = at_level_15(14);
+    (p.model.quests[0].start_kills, p.model.quests[0].start_mob_level) = (1.0, 5);
+    let report = planner(&p).edit(&[stop(Kind::Accept)]);
+    assert_eq!(
+        report.steps[0].outcome,
+        Outcome::Invalid("mobs too low for the level window")
+    );
+}
+
+#[test]
+fn a_place_in_the_window_lets_the_objective_be_fought() {
+    let mut p = kill_quest(16);
+    let o = &mut p.model.quests[0].objectives[0];
+    let mut low = o.clone();
+    low.mob_level = 13;
+    low.loc.pos.x += 300.0;
+    o.alts = vec![low];
+    let q = &p.model.quests[0];
+    let combat = Combat {
+        params: &p.params,
+        dungeons: &p.model.dungeons,
+    };
+    assert!(combat.fights(q, &q.objectives[0], 14, Might::PLAIN));
+    assert!(combat.level_of(q, &q.objectives[0], Might::PLAIN) < 16);
+}
+
+#[test]
+fn dungeons_are_run_within_the_window() {
+    let mut p = Params {
+        dungeon_from: -3,
+        dungeon_to: 6,
+        ..Params::default()
+    };
+    assert_eq!(p.dungeon_levels(), (0, 4));
+    p.strict_levels = false;
+    assert_eq!(p.dungeon_levels(), (-3, 6));
+}
+
+#[test]
+fn grinding_camps_are_never_above() {
+    use crate::testing::Scenario;
+    // Level 10 beside a camp of mobs of `mob` level (one group per scenario: the scenarios give
+    // every group the same NPC IDs, merged as one mob listed twice).
+    let camp = |mob: i64| {
+        let p = Scenario::new().levels(10, 30).mobs(1, 52.0, 50.0, mob, 12).build();
+        let plan = planner(&p);
+        plan.sim().camp(&plan.sim().initial_state())
+    };
+    assert_eq!(camp(11), None, "level 11 mobs: not a camp to grind at");
+    assert!(camp(9).is_some(), "level 9 mobs: ground at");
+    assert!(camp(10).is_some(), "level 10 mobs: ground at");
+}

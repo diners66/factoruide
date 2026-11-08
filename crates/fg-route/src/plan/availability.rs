@@ -161,19 +161,25 @@ impl Availability<'_> {
         let Some(window) = self.params.level_window(s.level) else {
             return false;
         };
+        let low = *window.start();
+        // The item starting it dropping from mobs too low (taking it only: the kills are behind).
+        let start_low = !s.accepted[i as usize] && q.start_kills > 0.0 && q.start_mob_level < low;
         !q.mandatory
             && !self.replaying
-            && q.objectives.iter().enumerate().any(|(k, o)| {
-                s.objectives[i as usize] & (1 << k) == 0
-                    && o.kills > 0.0
-                    && o.places().all(|place| place.mob_level < *window.start())
-            })
+            && (start_low
+                || q.objectives.iter().enumerate().any(|(k, o)| {
+                    s.objectives[i as usize] & (1 << k) == 0
+                        && o.kills > 0.0
+                        && !o.own_side
+                        && o.places().all(|place| place.mob_level < low)
+                }))
     }
 
     /// A place of a kill objective whose mobs are below the level window: not gone to when the
     /// objective has others.
     pub(crate) fn place_too_low(&self, s: &State, o: &crate::model::Objective) -> bool {
         o.kills > 0.0
+            && !o.own_side
             && self
                 .params
                 .level_window(s.level)
