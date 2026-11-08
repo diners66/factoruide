@@ -52,6 +52,12 @@ pub struct Params {
     pub progression: Progression,
     /// Margin of the progression profile in levels, instead of the profile's own (tuning).
     pub progression_margin: Option<f64>,
+    /// The level window: never a mob above the character's level (whatever its gear, class and
+    /// progression profile: an objective or a guarded place waits for the level of its mobs), and
+    /// quests whose mobs are more than `levels_below` under it are left out (given up in the log),
+    /// apart from mandatory ones. Our fork's rule: fights only against yellow and green mobs.
+    pub strict_levels: bool,
+    pub levels_below: i64,
     /// Levels of power an objective in a camp of elites requires per extra elite expected in a
     /// pull (1: three elites per pull need two levels more than a lone elite).
     pub elite_pull_levels: f64,
@@ -518,6 +524,8 @@ impl Default for Params {
             max_quest_above: 60,
             progression: Progression::Normal,
             progression_margin: None,
+            strict_levels: true,
+            levels_below: 4,
             elite_pull_levels: 1.0,
             pull_levels: 1.0,
             pack_power: None,
@@ -770,6 +778,12 @@ impl Params {
     /// Whether to hearth rather than travel: `by_hearth` saves enough of the `direct` trip.
     pub fn hearth_worth(&self, direct: f64, by_hearth: f64) -> bool {
         by_hearth + self.hearth_min_saving < direct
+    }
+
+    /// Mob levels the character fights at `level` (`strict_levels`): from `levels_below` under it
+    /// to its level. None when the window is off.
+    pub fn level_window(&self, level: i64) -> Option<std::ops::RangeInclusive<i64>> {
+        self.strict_levels.then(|| level - self.levels_below..=level)
     }
 
     /// Power a pack (three kills or more) requires on top of a lone target of the same level:

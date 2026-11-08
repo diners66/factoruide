@@ -173,7 +173,7 @@ impl Planner<'_> {
         let q = self.quest(i);
         q.objectives.iter().enumerate().find_map(|(k, o)| {
             let stop = Stop::quest(i, Kind::Objective(k as u8));
-            let level_ok = self.combat().need(q, o) <= self.params.reach(s.level, s.might());
+            let level_ok = self.combat().fights(q, o, s.level, s.might());
             (self.availability().objective_open(s, i, k)
                 && level_ok
                 && o.dungeon_of().is_none()
@@ -276,7 +276,7 @@ impl Planner<'_> {
                 } else {
                     for (k, o) in q.objectives.iter().enumerate() {
                         let stop = Stop::quest(i, Kind::Objective(k as u8));
-                        let level_ok = self.combat().need(q, o) <= self.params.reach(s.level, s.might());
+                        let level_ok = self.combat().fights(q, o, s.level, s.might());
                         if self.availability().objective_open(s, i, k)
                             && level_ok
                             && o.dungeon_of().is_none()

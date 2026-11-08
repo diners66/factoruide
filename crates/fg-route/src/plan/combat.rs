@@ -78,7 +78,40 @@ impl Combat<'_> {
         if need <= 0.0 {
             0
         } else {
-            self.params.level_for(need, might)
+            self.at_mob_level(self.params.level_for(need, might), g.level)
+        }
+    }
+
+    /// The character at `level` with `might` takes on objective `o` of `q`: its power reaches
+    /// the objective's (`need`), and with the level window no mob of it (nor of its guards) is
+    /// above the character. What the construction, the worth of a quest and the regions ask, so
+    /// they agree with the level the simulation waits for (`level_at`).
+    pub fn fights(self, q: &Quest, o: &Objective, level: i64, might: Might) -> bool {
+        if o.beside_giver {
+            return true;
+        }
+        self.need(q, o) <= self.params.reach(level, might)
+            && (!self.params.strict_levels
+                || (o.kills <= 0.0 || o.mob_level <= level) && Self::not_above(&o.guard, level))
+    }
+
+    /// The same for a place guarded by `g`.
+    pub(crate) fn guard_fights(self, g: &Guard, level: i64, might: Might) -> bool {
+        self.guard_need(g) <= self.params.reach(level, might)
+            && (!self.params.strict_levels || Self::not_above(g, level))
+    }
+
+    fn not_above(g: &Guard, level: i64) -> bool {
+        g.count == 0 || g.level <= level
+    }
+
+    /// `level`, raised to `mob` with the level window (`Params::strict_levels`): never a mob above
+    /// the character, whatever its power.
+    fn at_mob_level(self, level: i64, mob: i64) -> i64 {
+        if self.params.strict_levels {
+            level.max(mob)
+        } else {
+            level
         }
     }
 
@@ -94,7 +127,14 @@ impl Combat<'_> {
         if need <= 0.0 {
             0
         } else {
-            self.params.level_for(need, might)
+            let mut level = self.params.level_for(need, might);
+            if o.kills > 0.0 {
+                level = self.at_mob_level(level, o.mob_level);
+            }
+            if o.guard.count > 0 {
+                level = self.at_mob_level(level, o.guard.level);
+            }
+            level
         }
     }
 

@@ -12,7 +12,10 @@ fn generates_a_guide(edition: Edition, race: &str, class: &str, start: &str) {
     let conn = Fixture::new(edition).file(start).open();
     let overrides = Overrides::load_edition(&repo().join("overrides"), edition).unwrap();
     let request: PlanRequest = serde_json::from_value(serde_json::json!({
-        "race":race,"class":class,"from_level":1,"to_level":5
+        "race":race,"class":class,"from_level":1,"to_level":5,
+        // The editions' data, not the level window (under it the first mobs, above level 1,
+        // are ground to first and the target reached by the last turn-ins).
+        "params":{"strict_levels":false}
     }))
     .unwrap();
     let p = job::prepare(&conn, &overrides, &request, &|_| {}).unwrap();

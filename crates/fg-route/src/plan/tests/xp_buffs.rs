@@ -124,6 +124,8 @@ fn rested_xp_can_make_a_nearby_guarded_object_cheaper_than_a_distant_safe_one() 
     let mut p = super::camp_of_two_objectives();
     p.profile.from_level = 3;
     p.profile.to_level = 5;
+    // A level 7 guard taken on at level 5: the power rule alone, not the level window.
+    p.params.strict_levels = false;
     p.params.class_curve.clear();
     p.params.grind_kill_time = 60.0;
     p.params.detour = 1.0;

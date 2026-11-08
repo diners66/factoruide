@@ -90,7 +90,7 @@ impl Planner<'_> {
                             if self.availability().objective_open(&s, i, k) && o.kills > 0.0 && o.dungeon_of().is_none()
                             {
                                 options.push((
-                                    self.params.level_for(self.combat().need(q, o), s.might()),
+                                    self.combat().level_at(q, o, s.might()),
                                     Stop::quest(i, Kind::Objective(k as u8)),
                                 ));
                             }
@@ -102,9 +102,10 @@ impl Planner<'_> {
                         // ahead): its giver in reach, its mobs not yet.
                         let hardest = (q.objectives.iter())
                             .filter(|o| o.dungeon_of().is_none())
-                            .map(|o| self.combat().need(q, o))
-                            .fold(0.0, f64::max);
-                        let gate = gate.max(self.params.level_for(hardest, s.might()) - 1);
+                            .map(|o| self.combat().level_at(q, o, s.might()))
+                            .max()
+                            .unwrap_or(0);
+                        let gate = gate.max(hardest - 1);
                         if gate > s.level && (q.mandatory || self.worth().worth_it(&s, i, gate, 0.0)) {
                             options.push((gate, accept));
                         }
@@ -276,8 +277,7 @@ impl Planner<'_> {
             // done one after the other, while the clock runs.
             let class = if self.on_clock(s, i) { class * 0.2 } else { class };
             // Givers and turn-ins among mobs too strong for the character wait.
-            let reach = self.params.reach(s.level, s.might());
-            let guarded = |g| self.combat().guard_need(g) > reach;
+            let guarded = |g| !self.combat().guard_fights(g, s.level, s.might());
             if s.accepted[iu] {
                 if self.availability().objectives_done(s, i) {
                     if !guarded(&self.quest(i).end_guard)
@@ -288,7 +288,7 @@ impl Planner<'_> {
                     }
                 } else {
                     let q = self.quest(i);
-                    let can = |o: &crate::model::Objective| self.combat().need(q, o) <= reach;
+                    let can = |o: &crate::model::Objective| self.combat().fights(q, o, s.level, s.might());
                     // An item that does not last (`Objective::lasts`) is got once what uses it
                     // can follow, and then that comes first.
                     let item_clock = q.time_limit.is_none() && s.timers.iter().any(|&(t, _)| t == i);
@@ -1148,7 +1148,6 @@ impl Planner<'_> {
         {
             return None;
         }
-        let reach = self.params.reach(s.level, s.might());
         let bound = self.trips().bound(s);
         let pick_up = self.availability().dungeon_quests(d).find(|&i| {
             let iu = i as usize;
@@ -1159,7 +1158,9 @@ impl Planner<'_> {
                 && !s.turned[iu]
                 && s.log < self.params.quest_log_size
                 && self.quest(i).min_level <= s.level
-                && self.combat().guard_need(&self.quest(i).start_guard) <= reach
+                && self
+                    .combat()
+                    .guard_fights(&self.quest(i).start_guard, s.level, s.might())
                 && self.availability().can_accept(s, i)
                 && lower.is_finite()
                 && self.worth().worth_it(s, i, s.level, lower)

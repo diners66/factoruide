@@ -81,13 +81,10 @@ impl Worth<'_> {
         let q = self.quest(i);
         let might = s.might();
         // Content far beyond our reach would block a quest log slot until we level up.
-        let hardest = q
-            .objectives
-            .iter()
+        let beyond = (q.objectives.iter())
             .filter(|o| o.dungeon_of().is_none())
-            .map(|o| self.combat.need(q, o))
-            .fold(0.0, f64::max);
-        if hardest > self.params.reach(level + 1, might) {
+            .any(|o| !self.combat.fights(q, o, level + 1, might));
+        if beyond {
             return false;
         }
         if q.mandatory {
@@ -133,11 +130,10 @@ impl Worth<'_> {
             .filter(|(k, _)| s.objectives[i as usize] & (1 << k) == 0)
             .map(|(_, o)| o)
             .collect();
-        let hardest = (left.iter())
+        let beyond = (left.iter())
             .filter(|o| o.dungeon_of().is_none())
-            .map(|o| self.combat.need(q, o))
-            .fold(0.0, f64::max);
-        if hardest > self.params.reach(level + 1, s.might()) {
+            .any(|o| !self.combat.fights(q, o, level + 1, s.might()));
+        if beyond {
             return false;
         }
         if q.mandatory {

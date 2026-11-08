@@ -134,7 +134,13 @@ impl QuestBuilder<'_> {
             return min_level;
         }
         let need = mob_level as f64 + if kills <= 2.0 { -1.0 } else { self.params.pack_extra() };
-        min_level.max(self.params.level_for(need, crate::params::Might::PLAIN))
+        let level = min_level.max(self.params.level_for(need, crate::params::Might::PLAIN));
+        // The level window: never a mob above the character (`Params::strict_levels`).
+        if self.params.strict_levels {
+            level.max(mob_level)
+        } else {
+            level
+        }
     }
 
     /// The quest's XP (to each member it is for, see `Initial::need`).

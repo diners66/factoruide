@@ -9,6 +9,7 @@ use rusqlite::Connection;
 use std::path::PathBuf;
 
 mod dungeons;
+mod level_window;
 mod movement;
 mod profession_trainers;
 mod xp_buffs;
@@ -728,8 +729,38 @@ fn greedy_grinds_to_the_mobs_of_a_quest_in_reach() {
         lasts: None,
         stock: None,
     }];
+    // The power rule alone (`strict_levels` off): the chief, a lone target, is fought below its
+    // level, and the turn-in comes as a stop of its own.
+    p.params.strict_levels = false;
     let route = planner(&p).greedy();
     assert!(route.contains(&Stop::quest(0, Kind::TurnIn)), "{route:?}");
+    // The level window: the chief is fought at its level and the quest turned in, a level 7
+    // quest (one of level 1 would be gray by then, given up).
+    p.params.strict_levels = true;
+    p.model.quests[0].level = 7;
+    let route = planner(&p).greedy();
+    let edits: Vec<_> = route
+        .iter()
+        .map(|&stop| super::Edit::Stop {
+            stop,
+            farm: false,
+            spot: None,
+        })
+        .collect();
+    let report = planner(&p).edit(&edits);
+    assert_eq!(report.errors(), 0);
+    let at = route
+        .iter()
+        .position(|s| *s == Stop::quest(0, Kind::Objective(0)))
+        .expect("the kill");
+    assert!(report.steps[at].level >= 7, "killed at {}", report.steps[at].level);
+    assert!(route.contains(&Stop::quest(0, Kind::TurnIn)), "{route:?}");
+    assert!(
+        !report
+            .trace
+            .iter()
+            .any(|t| matches!(t.event, super::Event::Abandon { .. }))
+    );
 }
 
 /// A trip flies to a port before its boat, and flies on from where a boat lands, when that is

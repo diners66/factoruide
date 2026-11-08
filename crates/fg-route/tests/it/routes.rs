@@ -4307,7 +4307,7 @@ fn death_skips_below_level_ten_and_a_half() {
     let scenario = |on: bool| {
         leveling(13)
             .graveyard(3, 50.0, 50.0)
-            .params(move |p| (p.death_skips, p.effort) = (on, 0.0))
+            .params(move |p| (p.death_skips, p.effort, p.strict_levels) = (on, 0.0, false))
     };
     let deaths = |o: &job::PlanOutcome| {
         (o.route.steps.iter())
