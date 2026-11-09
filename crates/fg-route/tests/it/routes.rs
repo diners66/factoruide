@@ -684,7 +684,8 @@ fn pet_quest_comes_early() {
 /// for it, and Piercing the Veil is worth the Imp's power.
 #[test]
 fn class_quest_is_required_for_its_spell_not_its_name() {
-    let p = prepare("undead", "warlock", 10, &["progression=cautious"]);
+    // The upstream construction, without the level window (it changes which quests fit).
+    let p = prepare("undead", "warlock", 10, &["progression=cautious", "strict_levels=false"]);
     let q = |id| &p.model.quests[quest(&p, id).unwrap() as usize];
     let (veil, imp, talk) = (q(1470), q(1485), q(1499));
     assert!(veil.mandatory && imp.mandatory, "both teach the Imp");
@@ -1040,6 +1041,7 @@ fn gathering_next_to_kills_overlaps_them() {
             guard: Guard::default(),
             beside_giver: false,
             own_side: false,
+            mob_top: 0,
             item: false,
             alts: vec![],
             after: 0,
@@ -2465,6 +2467,7 @@ fn kills_east_of_start(p: &Prepared, dx: f64, kills: f64, mob_level: i64) -> Obj
         guard: Guard::default(),
         beside_giver: false,
         own_side: false,
+        mob_top: 0,
         item: false,
         alts: vec![],
         after: 0,
@@ -3299,7 +3302,7 @@ fn profession_trainer_stops_are_off_unless_chosen() {
     let plan = |setting: &[&str]| {
         let request = PlanRequest {
             professions: ["leatherworking", "skinning", "mining", "first_aid"].map(goal).to_vec(),
-            ..request("orc", "warrior", 30, &[&["effort=0"], setting].concat())
+            ..request("orc", "warrior", 30, &[&["effort=0", "strict_levels=false"], setting].concat())
         };
         job::plan(&database(), &overrides(), &request, &|_| {}).unwrap().route
     };

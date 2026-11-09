@@ -337,3 +337,21 @@ fn hub_keeps_a_far_timed_quest_for_later() {
         .collect();
     assert_eq!(first, vec![0, 2]);
 }
+
+/// Mobs of several levels at an objective's spot (a camp of 16 to 20): the window asks for the
+/// highest of them, not the level of the weakest (`Objective::mob_top`).
+#[test]
+fn strict_levels_wait_for_the_strongest_mob_at_the_spot() {
+    let mut p = kill_quest(12);
+    p.params.progression_margin = Some(5.0);
+    p.model.quests[0].objectives[0].mob_top = 15;
+    let q = &p.model.quests[0];
+    let combat = Combat {
+        params: &p.params,
+        dungeons: &p.model.dungeons,
+    };
+    let o = &q.objectives[0];
+    assert!(combat.level_at(q, o, Might::PLAIN) >= 15, "{}", combat.level_at(q, o, Might::PLAIN));
+    assert!(!combat.fights(q, o, 14, Might::PLAIN));
+    assert!(combat.fights(q, o, 15, Might::PLAIN));
+}

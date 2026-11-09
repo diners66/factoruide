@@ -839,6 +839,7 @@ mod tests {
             mob_ids: Vec::new(),
             elite: false,
             mob_level: None,
+            mob_top: None,
             reward: None,
             reward_xp: None,
             party_reward_xp: Vec::new(),

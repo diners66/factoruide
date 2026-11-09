@@ -235,6 +235,9 @@ pub struct Step {
     pub elite: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mob_level: Option<i64>,
+    /// The strongest mob met there, when above `mob_level` (a camp mixing levels).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mob_top: Option<i64>,
     /// Reward to pick among the quest's choices (item ID) on a turn-in.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward: Option<i64>,
@@ -328,6 +331,7 @@ impl Step {
             mob_ids: Vec::new(),
             elite: false,
             mob_level: None,
+            mob_top: None,
             reward: None,
             reward_xp: None,
             party_reward_xp: Vec::new(),

@@ -237,6 +237,9 @@ pub struct Objective {
     /// Expected number of kills, their level, and object interactions.
     pub kills: f64,
     pub mob_level: i64,
+    /// The highest level of the mobs met at its spot (0: `mob_level`): what the level window
+    /// (`Params::strict_levels`) waits for, a camp mixing levels being fought whole.
+    pub mob_top: i64,
     pub uses: f64,
     /// Fixed extra time (buying, exploring).
     pub extra: f64,
@@ -337,6 +340,11 @@ pub struct Vendor {
 }
 
 impl Objective {
+    /// Level of the strongest mob met at its spot (`mob_top`, else `mob_level`).
+    pub fn top_level(&self) -> i64 {
+        self.mob_top.max(self.mob_level)
+    }
+
     /// The dungeon the objective belongs to: done by entering it (`dungeon`), or inside it.
     pub fn dungeon_of(&self) -> Option<usize> {
         self.dungeon.or(self.loc.inside.map(usize::from))

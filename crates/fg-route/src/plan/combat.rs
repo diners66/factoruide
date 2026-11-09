@@ -103,7 +103,7 @@ impl Combat<'_> {
         }
         self.need(q, o) <= self.params.reach(level, might)
             && (!self.params.strict_levels
-                || (o.kills <= 0.0 || o.own_side || o.mob_level <= level) && Self::not_above(&o.guard, level))
+                || (o.kills <= 0.0 || o.own_side || o.top_level() <= level) && Self::not_above(&o.guard, level))
     }
 
     /// The same for a place guarded by `g`.
@@ -153,7 +153,7 @@ impl Combat<'_> {
         } else {
             let mut level = self.params.level_for(need, might);
             if o.kills > 0.0 && !o.own_side {
-                level = self.at_mob_level(level, o.mob_level);
+                level = self.at_mob_level(level, o.top_level());
             }
             if o.guard.count > 0 {
                 level = self.at_mob_level(level, o.guard.level);

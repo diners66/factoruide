@@ -318,6 +318,7 @@ impl StepWriter<'_> {
             mob_ids: Vec::new(),
             elite: false,
             mob_level: None,
+            mob_top: None,
             reward: None,
             reward_xp: None,
             party_reward_xp: Vec::new(),
@@ -425,6 +426,7 @@ impl StepWriter<'_> {
         step.slot = Some(o.slot.unwrap_or(0));
         step.elite = o.elite;
         step.mob_level = (o.kills > 0.0 && o.mob_level > 0).then_some(o.mob_level);
+        step.mob_top = (o.kills > 0.0 && o.top_level() > o.mob_level).then_some(o.top_level());
         for (id, name) in o.mobs.iter().take(4) {
             if !step.mob_ids.contains(id) {
                 step.mobs.push(name.clone());

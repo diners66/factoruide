@@ -212,6 +212,11 @@ impl Entities {
         .unwrap_or_else(|| format!("{} {id}", kind.as_str()))
     }
 
+    /// Highest level an NPC spawns at.
+    pub(super) fn npc_top(&self, id: i64) -> i64 {
+        self.npc.get(&id).map_or(1, |n| n.1.max(n.2))
+    }
+
     pub(super) fn npc_level(&self, id: i64) -> i64 {
         self.npc.get(&id).map_or(1, |n| i64::midpoint(n.1, n.2))
     }

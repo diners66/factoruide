@@ -414,6 +414,7 @@ impl QuestBuilder<'_> {
             .map(|id| entities.npc_level(*id))
             .min()
             .unwrap_or(quest.level);
+        let mob_top = here.iter().map(|id| entities.npc_top(*id)).max().unwrap_or(0);
         let chances: Vec<f64> = here
             .iter()
             .filter_map(|id| self.sources.drop_chance.get(&(target, *id)).copied())
@@ -436,6 +437,7 @@ impl QuestBuilder<'_> {
         Objective {
             kills: count / chance * self.per_player,
             mob_level,
+            mob_top,
             elite: here.iter().all(|id| entities.is_elite(*id)),
             count,
             mobs: here

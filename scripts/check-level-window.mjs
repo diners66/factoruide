@@ -1,5 +1,6 @@
 // Checks a planned guide (routes/<name>.json, as `fg route` writes it) against the level window:
-// every kill step's mobs at the character's level or at most `below` levels under it.
+// every kill step's mobs (the strongest at its spot, `mob_top`) at the character's level or at
+// most `below` levels under it.
 //   node scripts/check-level-window.mjs <guide.json> [below=4]
 // Prints the steps out of the window and exits 1 when there are any.
 import fs from "node:fs";
@@ -15,10 +16,11 @@ const steps = guide.steps ?? guide.route?.steps ?? guide.plan ?? [];
 
 // Kill objectives, and accepts started by a drop (their step carries the dropping mob's level).
 const kills = steps.filter((s) => ["objective", "accept"].includes(s.kind?.toLowerCase()) && s.mob_level != null);
-const out = kills.filter((s) => s.mob_level > s.level || s.mob_level < s.level - below);
+const top = (s) => Math.max(s.mob_level, s.mob_top ?? 0);
+const out = kills.filter((s) => top(s) > s.level || s.mob_level < s.level - below);
 for (const s of out) {
-  const why = s.mob_level > s.level ? "above" : "too low";
-  console.log(`level ${s.level}, mobs ${s.mob_level} (${why}): ${s.quest_name ?? "?"} — ${s.text}`);
+  const why = top(s) > s.level ? "above" : "too low";
+  console.log(`level ${s.level}, mobs ${s.mob_level}-${top(s)} (${why}): ${s.quest_name ?? "?"} — ${s.text}`);
 }
 console.log(`${kills.length} kill steps, ${out.length} out of the window (mobs from level - ${below} to level)`);
 process.exit(out.length ? 1 : 0);
