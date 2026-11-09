@@ -274,3 +274,66 @@ fn unknown_history_counts_the_quests_below_as_done() {
         "a history without it"
     );
 }
+
+/// At a hub, a quest of the route is taken as soon as it can be, however far ahead the route
+/// takes it: 40 quests elsewhere between the two accepts of the hub's quests.
+#[test]
+fn hub_takes_a_planned_quest_as_soon_as_available() {
+    use crate::plan::{Event, Kind, Stop};
+    let n = 42;
+    let mut p = crate::plan::tests::quests_at_start(n);
+    p.params.camp_radius = 50.0;
+    let mut far = p.model.start.clone();
+    far.pos.x += 1000.0;
+    for q in &mut p.model.quests[2..] {
+        (q.starts, q.ends) = (vec![far.clone()], vec![far.clone()]);
+    }
+    let mut route = vec![Stop::quest(0, Kind::Accept), Stop::quest(0, Kind::TurnIn)];
+    for i in 2..n as u32 {
+        route.extend([Stop::quest(i, Kind::Accept), Stop::quest(i, Kind::TurnIn)]);
+    }
+    route.extend([Stop::quest(1, Kind::Accept), Stop::quest(1, Kind::TurnIn)]);
+    let planner = planner(&p);
+    let mut trace = Vec::new();
+    planner.simulate(&route, Some(&mut trace)).expect("valid route");
+    let accepts: Vec<usize> = trace
+        .iter()
+        .filter_map(|t| match t.event {
+            Event::Stop { stop, .. } if stop.kind == Kind::Accept => Some(stop.index as usize),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(&accepts[..2], &[0, 1], "quest 1 taken at the hub first: {accepts:?}");
+}
+
+/// A timed quest is not taken early at a hub: its time would run out.
+#[test]
+fn hub_keeps_a_far_timed_quest_for_later() {
+    use crate::plan::{Event, Kind, Stop};
+    let n = 42;
+    let mut p = crate::plan::tests::quests_at_start(n);
+    p.params.camp_radius = 50.0;
+    p.model.quests[1].time_limit = Some(100_000.0);
+    let mut far = p.model.start.clone();
+    far.pos.x += 1000.0;
+    for q in &mut p.model.quests[2..] {
+        (q.starts, q.ends) = (vec![far.clone()], vec![far.clone()]);
+    }
+    let mut route = vec![Stop::quest(0, Kind::Accept), Stop::quest(0, Kind::TurnIn)];
+    for i in 2..n as u32 {
+        route.extend([Stop::quest(i, Kind::Accept), Stop::quest(i, Kind::TurnIn)]);
+    }
+    route.extend([Stop::quest(1, Kind::Accept), Stop::quest(1, Kind::TurnIn)]);
+    let planner = planner(&p);
+    let mut trace = Vec::new();
+    planner.simulate(&route, Some(&mut trace)).expect("valid route");
+    let first: Vec<usize> = trace
+        .iter()
+        .filter_map(|t| match t.event {
+            Event::Stop { stop, .. } if stop.kind == Kind::Accept => Some(stop.index as usize),
+            _ => None,
+        })
+        .take(2)
+        .collect();
+    assert_eq!(first, vec![0, 2]);
+}

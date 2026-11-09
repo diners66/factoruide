@@ -167,8 +167,8 @@ impl Planner<'_> {
 
     /// First stop before `a` of the evaluated route whose quests taken or turned in at hand
     /// (`while_here`) may differ with the plan `new` of the candidate: a stop with an NPC at hand
-    /// of a quest whose plan changed, where the stop really looked (`Run::heres`). A quest is taken at hand up to `CAMP_AHEAD` stops before
-    /// the route accepts it, turned in at hand once in the log, and not taken when it would
+    /// of a quest whose plan changed, where the stop really looked (`Run::heres`). A quest is taken at hand from the first stop with its giver
+    /// at hand (a timed one up to `CAMP_AHEAD` stops before the route accepts it), turned in at hand once in the log, and not taken when it would
     /// block one the route takes later.
     fn replanned_from(&self, run: &Run, new: &Planned, a: usize) -> usize {
         let radius = self.params.camp_radius;
@@ -178,7 +178,14 @@ impl Planner<'_> {
         if radius <= 0.0 || done == 0 {
             return a;
         }
-        let ahead = |at: u32| at.saturating_sub(CAMP_AHEAD) as usize;
+        // First stop where quest `i`, accepted by the route at stop `at`, may be taken at hand.
+        let ahead = |i: usize, at: u32| {
+            if self.model.quests[i].time_limit.is_some() {
+                at.saturating_sub(CAMP_AHEAD) as usize
+            } else {
+                0
+            }
+        };
         let mut start = a;
         // Stops `from..to` (before `start`) with an NPC of quest `i` at hand.
         let at_hand = |i: usize, from: usize, to: usize, start: &mut usize| {
@@ -203,11 +210,11 @@ impl Planner<'_> {
             let from = if self.model.initial.accepted.contains(&i) {
                 0
             } else {
-                ahead(at.0.min(at.1))
+                ahead(i, at.0.min(at.1))
             };
             // Only the accept moved: taken at hand where one plan takes it soon and not the other.
             let to = if flags.0 == flags.1 {
-                ahead(at.0.max(at.1))
+                ahead(i, at.0.max(at.1))
             } else {
                 usize::MAX
             };
@@ -215,7 +222,7 @@ impl Planner<'_> {
             if (flags.0 ^ flags.1) & 1 != 0 {
                 for &x in &self.ix.blocked_by[i] {
                     let x = x as usize;
-                    at_hand(x, ahead(old.accept_at[x].min(new.accept_at[x])), usize::MAX, &mut start);
+                    at_hand(x, ahead(x, old.accept_at[x].min(new.accept_at[x])), usize::MAX, &mut start);
                 }
             }
         }

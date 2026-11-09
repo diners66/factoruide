@@ -12,7 +12,8 @@ use std::rc::Rc;
 
 /// Free quest log slots kept when taking a quest at hand (the route takes others before it).
 pub(crate) const CAMP_LOG_MARGIN: usize = 2;
-/// Quests taken at hand: those the route takes within this many stops anyway.
+/// Timed quests taken at hand: those the route takes within this many stops anyway (the others
+/// are taken at hand whenever the route takes them).
 pub(crate) const CAMP_AHEAD: u32 = 30;
 
 /// A walk: in one word the walk level (0: no zone closed), the continent and its ends'
@@ -338,8 +339,12 @@ impl Simulator<'_> {
                             continue;
                         }
                         let iu = i as usize;
+                        // A quest of the route is taken as soon as it is at hand, a timed one only
+                        // when the route takes it soon (its time runs from the accept).
                         let planned = if start {
-                            s.planned.flags[iu] & 1 != 0 && s.planned.accept_at[iu] <= s.at + CAMP_AHEAD
+                            s.planned.flags[iu] & 1 != 0
+                                && (s.planned.accept_at[iu] <= s.at + CAMP_AHEAD
+                                    || self.quest(i).time_limit.is_none())
                         } else {
                             s.planned.flags[iu] & 2 != 0 && s.accepted[iu] && !s.turned[iu]
                         };
