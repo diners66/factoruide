@@ -279,7 +279,15 @@ pub(super) fn default_completion_windows(quests: &mut [Quest], profile: &Profile
         .filter(|c| c.selected)
         .flat_map(|c| c.quests.iter().copied())
         .collect();
-    for q in quests.iter_mut() {
+    // With the level window, the level the strongest mobs of each quest and of the chain leading
+    // to it ask for: a deadline before it could not be met.
+    let floors: Vec<i64> = if params.strict_levels {
+        let index: HashMap<i64, usize> = quests.iter().enumerate().map(|(i, q)| (q.id, i)).collect();
+        (0..quests.len()).map(|i| chain_mob_floor(quests, &index, i)).collect()
+    } else {
+        vec![0; quests.len()]
+    };
+    for (q, &floor) in quests.iter_mut().zip(&floors) {
         let asked = profile.required_quests.iter().any(|r| r.id == q.id);
         let must_have = q.mandatory && (asked || required_by_class.contains(&q.id));
         if !must_have || q.completion_window.min_level.is_some() || q.completion_window.max_level.is_some() {
@@ -289,7 +297,8 @@ pub(super) fn default_completion_windows(quests: &mut [Quest], profile: &Profile
         // A quest that cannot be taken before it is gray (its level under its minimum) has no limit.
         let max = gray_from
             .map(|l| l - 1)
-            .filter(|&m| m >= profile.from_level && m >= q.min_level);
+            .filter(|&m| m >= profile.from_level && m >= q.min_level)
+            .map(|m| m.max(floor));
         let min = (q.level - above).max(1);
         q.completion_window = CompletionWindow {
             min_level: Some(min).filter(|&m| m > profile.from_level),
@@ -326,6 +335,26 @@ pub(super) fn default_completion_windows(quests: &mut [Quest], profile: &Profile
             );
         }
     }
+}
+
+/// Highest level the level window waits for in quest `i` and the prerequisites it needs: for each
+/// kill objective, the strongest mob at the easiest of its places (`Objective::top_level`).
+fn chain_mob_floor(quests: &[Quest], index: &HashMap<i64, usize>, i: usize) -> i64 {
+    let mut stack = vec![i];
+    let mut seen = HashSet::new();
+    let mut floor = 0;
+    while let Some(k) = stack.pop() {
+        if !seen.insert(k) {
+            continue;
+        }
+        let q = &quests[k];
+        for o in q.objectives.iter().filter(|o| o.kills > 0.0 && !o.own_side) {
+            floor = floor.max(o.places().map(|p| p.top_level()).min().unwrap_or(0));
+        }
+        let only_one = q.pre_any.iter().filter(|_| q.pre_any.len() == 1);
+        stack.extend(q.pre_all.iter().chain(only_one).chain(&q.pre_held).filter_map(|id| index.get(id)));
+    }
+    floor
 }
 
 /// Prerequisites of required quests are required too: all of `pre_all`, and the one of

@@ -355,3 +355,28 @@ fn strict_levels_wait_for_the_strongest_mob_at_the_spot() {
     assert!(!combat.fights(q, o, 14, Might::PLAIN));
     assert!(combat.fights(q, o, 15, Might::PLAIN));
 }
+
+/// A class quest whose chain needs mobs above the level it turns gray at (the warlock's Binding
+/// after Wish You Were Here, its Shadethicket camp up to 30): with the level window its deadline
+/// waits for those mobs, the route could not make it otherwise.
+#[test]
+fn a_must_have_deadline_waits_for_its_chain_mobs() {
+    use crate::testing::{Q, Scenario};
+    let build = |strict: bool| {
+        Scenario::new()
+            .levels(18, 60)
+            .quest(Q::new(901, "Wish").level(27).min_level(20).kill("Oracle", 30, 1, 1, 50.0, 50.0))
+            .quest(Q::new(902, "Binding").level(20).min_level(20).after(&[901]).mandatory())
+            .requirement("Pet", &[902])
+            .params(|p| p.strict_levels = strict)
+            .build()
+    };
+    let max = |p: &Prepared| {
+        let i = p.model.quests.iter().position(|q| q.id == 902).unwrap();
+        p.model.quests[i].completion_window.max_level
+    };
+    let loose = max(&build(false));
+    assert!(loose.is_some_and(|m| m < 30), "{loose:?}");
+    let strict = max(&build(true));
+    assert!(strict.is_some_and(|m| m >= 30), "{strict:?}");
+}
