@@ -44,9 +44,11 @@ Checked in game (2026-11-10): `C_QuestLog.RequestLoadQuestByID` answers
 ## 4. Fewer returns to an area
 
 - Measure: `scripts/check-returns.mjs` (23 avoidable returns on zev-18-60).
-- Find what makes the search come back (an objective done near one done before, for a quest in
-  the log then) and make it cost more, or pull such objectives forward, with tests on small
-  worlds. Accept only if total time does not grow much; report before/after.
+- Done in the last tidying (`plan/tidy.rs`), which only looked 40 stops back within 100 yards
+  for 30 seconds: a quest's objective is looked for up to 400 stops back, within
+  `return_radius` (200 yards; 300 took the town next to a camp for the camp), once its quest is
+  taken or in the starting log, and moved there for at most `return_slack` (300 seconds).
+  Tests: `plan/tests/returns.rs`. Before/after on the same save: `--param return_slack=-1`.
 
 ## Checks
 
