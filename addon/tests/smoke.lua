@@ -713,6 +713,43 @@ Press("undo")
 assert(char.guide.step == 3, "nothing left to undo, step " .. char.guide.step)
 print("skip ok")
 
+-- An objective guide below the level its quests ask: the current step says so until it is reached.
+do
+    FG.Routes["objective-test"] = {
+        race = 7,
+        class = 8,
+        faction = "Alliance",
+        fromLevel = 21,
+        toLevel = 21,
+        time = 1,
+        recommendedLevel = 25,
+        steps = {
+            { k = "accept", t = "Accept High Quest", q = 5101, lvl = 21 },
+            { k = "turnin", t = "Turn in High Quest", q = 5101, lvl = 21 },
+        },
+    }
+    local shown
+    local card, mini = FG.Card.Render, FG.Mini.Render
+    FG.Card.Render = function(_, view) shown = view end
+    FG.Mini.Render = FG.Card.Render
+    local function warned()
+        shown = nil
+        FG.Guide:Refresh()
+        for _, c in ipairs(shown and shown.tasks[1] and shown.tasks[1].chips or {}) do
+            if c.text == string.format(FG.T("Level %d recommended, you are %d"), 25, 21) then return true end
+        end
+        return false
+    end
+    useRoute("objective-test")
+    assert(warned(), "the level recommended on the current step")
+    playerLevel = 25
+    assert(not warned(), "nothing once the level is reached")
+    playerLevel = 21
+    FG.Card.Render, FG.Mini.Render = card, mini
+    useRoute("skip-test")
+end
+print("recommended level ok")
+
 -- Progress belongs to its guide: a quest marked done by hand in one is still to do in another,
 -- and coming back finds the marks again. A new version keeps the quests, not the step marks.
 Press("skip")
@@ -3190,6 +3227,26 @@ FG.Guide:Layout().trackerPoint = nil
 tracker.placed = nil
 FG.Tracker:Refresh()
 
+-- A line that inherited the quest item buttons' protection (the newer clients): in combat it keeps
+-- its place and visibility, its texts still change; all of it back once the fight ends.
+do
+    local frozenLine = childOf(tracker, function(f) return rawget(f, "track") ~= nil end)
+    local frozenMoves = 0
+    local realClear = frozenLine.ClearAllPoints
+    frozenLine.ClearAllPoints = function() frozenMoves = frozenMoves + 1 end
+    frozenLine.IsProtected = function() return true end
+    frozenLine:Hide()
+    InCombatLockdown = function() return true end
+    FG.Tracker:Refresh()
+    assert(frozenMoves == 0, "a protected line is not moved during combat")
+    assert(not frozenLine._shown, "nor shown in combat")
+    InCombatLockdown = function() return false end
+    FG.Tracker:Refresh()
+    assert(frozenMoves > 0 and frozenLine._shown, "placed and shown again after the fight: " .. frozenMoves)
+    frozenLine.IsProtected = nil
+    frozenLine.ClearAllPoints = realClear
+end
+
 -- The minimal guide: its strip, the next steps under it and the compass over it move the strip.
 Press("mode")
 local strip = FG.Mini:Frame()
@@ -4292,6 +4349,46 @@ local function ExportImport()
         FG.Import.Run("os.exit(1)") == nil and FG.Import.Run(string.dump(function() end)) == nil,
         "no os, no bytecode"
     )
+    -- WoW's integer formatter can be signed 32-bit even when Lua numbers hold wider masks.
+    -- Exercise the pasted-string preparation path, then reload the text kept for that guide.
+    local wide = Encode([[
+Factoruide.Routes = {}
+Factoruide.Routes["wide-numbers"] = {
+    race = 7, class = 8, format = 2, created = 1000, version = 1,
+    steps = {{ k = "reputation", rp = { sources = {{ eligibility = { race_mask = 8589934770 } }} } }},
+    numbers = {2147483647, 2147483648, -2147483648, -2147483649, 4294967295,
+        8589934770, -8589934770, 9007199254740991, 8589934770.25},
+    [8589934770] = "wide numeric key",
+}
+]])
+    local format = string.format
+    string.format = function(pattern, ...)
+        local value = ...
+        if pattern == "%d" and type(value) == "number" and (value < -2147483648 or value > 2147483647) then
+            error("integer overflow attempting to store " .. format("%.0f", value))
+        end
+        return format(pattern, ...)
+    end
+    local ok, pending, wideErr = pcall(FG.Import.Read, FG.Import, wide)
+    string.format = format
+    assert(ok and pending, "wide-number guide import: " .. tostring(wideErr or pending))
+    local restored = assert(loadstring(pending.guides["wide-numbers"].text))()
+    assert(restored.steps[1].rp.sources[1].eligibility.race_mask == 8589934770, "race mask remains a number")
+    assert(restored[8589934770] == "wide numeric key", "wide numeric table key survives")
+    local expected = {
+        2147483647,
+        2147483648,
+        -2147483648,
+        -2147483649,
+        4294967295,
+        8589934770,
+        -8589934770,
+        9007199254740991,
+        8589934770.25,
+    }
+    for i, value in ipairs(expected) do
+        assert(restored.numbers[i] == value, "wide-number save/reload preserves value " .. i)
+    end
     -- Kept as Lua text: read back the same, a table inside itself refused.
     local value = { 1, nil, 'a\n"b"\0', x = 0.1, [1.5] = true, ["end"] = { -3, 1 / 3, 2 ^ 60 } }
     local back = assert(loadstring(assert(FG.Import.Serialize(value))))()

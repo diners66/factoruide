@@ -899,6 +899,7 @@ mod tests {
             sync_max: None,
             class_spells: Vec::new(),
             buffs: Vec::new(),
+            recommended: None,
             steps,
         }
     }

@@ -8,9 +8,45 @@ An addon change also goes, in the same words, under Unreleased in that addon's o
 
 ## Unreleased
 
+### App
+
+- The web app no longer runs out of memory while making a guide, nor after making a few.
+- A web app built on Windows includes its game databases and map images.
+- The guide map zooms in further, draws only the steps from the current one (a slider sets how many of the zone's), and arrows show which way the route goes.
+
+### Guides
+
+- A forced dungeon is run even when it has no quest for your character (Shadowfang Keep for the Alliance).
+- Loot is no longer sold to warlock-only demon trainers in a guide for another class.
+- The quests inside a dungeon are finished before leaving for another forced dungeon.
+
+### Addon
+
+- No more blocked-action errors from the quest panel during a fight; its layout catches up afterwards.
+- Guides pasted on Windows no longer fail to import on large numbers.
+
 ### WoW data
 
-- WoW Forever: the latest quest data and the game's new build, with 34 more contributions from players (quests seen in game, measured XP and drop rates, creature places) and 105 Spanish, French, German and English names checked; Lakeshire's guards no longer count as hostile creatures around Guard Howe and Deputy Feldon.
+- WoW Forever: Corma Villard's Wetlands quests, no longer offered in game, are left out of the guides.
+- WoW Forever: Murloc Gills, The Gurubashi Legends of Old and Blackfathom Villainy come after the quest that opens them.
+
+## 0.17.0 (2026-11-09)
+
+Objective guides: several dungeons, zones and quests at once, in the best order whatever their level, and the latest WoW Forever data.
+
+### App
+
+- Objective guides replace the dungeon guide: pick several dungeons, zones and quests at once, and get every quest of them with what leads to them, in the best order, whatever their level; the guide tells the level its quests ask and lists those above yours.
+
+### Addon
+
+- An objective guide done below the level its quests ask says so on the current step until you reach it.
+- World map pins and the walk's dots keep their size on a map enlarged by another addon.
+
+### WoW data
+
+- WoW Forever: the latest quest data and the game's new build, with 58 more contributions from players (quests seen in game, measured XP and drop rates, creature places) and 134 Spanish, French, German and English names checked; most of the Riverglades quests are in the guides, dungeon quests give their new, higher XP, and Lakeshire's guards and Guard Parker's supply crates no longer count as hostile creatures.
+- WoW Forever: quests offered only after another one in game (Heart of Disruption, The Broodmother, Lightforge Ingots, Highland Hides, Forgotten Loa Idols, Whuut's the Rush) wait for it in the guides, From the Ashes is taken with War Banners, and Alonso's Dragonslayer quests in Ashenvale are for Warriors only.
 
 ## 0.16.0 (2026-11-07)
 
