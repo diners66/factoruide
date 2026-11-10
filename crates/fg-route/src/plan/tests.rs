@@ -12,6 +12,7 @@ mod dungeons;
 mod level_window;
 mod movement;
 mod profession_trainers;
+mod returns;
 mod xp_buffs;
 #[test]
 fn completion_window_is_checked_after_exploration_on_the_trip() {

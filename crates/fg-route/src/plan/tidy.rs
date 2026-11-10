@@ -6,6 +6,8 @@ use super::state::{Kind, Stop};
 
 /// How many stops back a stop is looked to be done earlier.
 const BACK: usize = 40;
+/// How many stops back a quest's objective is looked to be done earlier (`Params::return_slack`).
+const RETURN_BACK: usize = 400;
 
 impl Planner<'_> {
     /// `route` with each stop done at the first visit of its place among the `BACK` stops before
@@ -13,9 +15,13 @@ impl Planner<'_> {
     /// place) and it costs at most `tidy_slack` seconds: the search sees no gain in it, the
     /// player sees a quest taken or the hearthstone bound on the way back where it could have
     /// been in passing. The route and its score, or None when nothing moved.
+    ///
+    /// A quest's objective is looked for further back (`RETURN_BACK` stops, `return_radius`,
+    /// `return_slack`), its quest taken by then: no trip back to an area for it.
     pub(crate) fn tidy(&self, route: &[Stop]) -> Option<(Vec<Stop>, f64)> {
-        let (slack, radius) = (self.params.tidy_slack, self.params.tidy_radius);
-        if slack < 0.0 {
+        let (tidy_slack, tidy_radius) = (self.params.tidy_slack, self.params.tidy_radius);
+        let (return_slack, return_radius) = (self.params.return_slack, self.params.return_radius);
+        if tidy_slack < 0.0 && return_slack < 0.0 {
             return None;
         }
         let mut run = self.run(route)?;
@@ -28,10 +34,34 @@ impl Planner<'_> {
                 j += 1;
                 continue;
             }
+            let objective = matches!(route[j].kind, Kind::Objective(_)) && return_slack >= 0.0;
+            let (slack, radius, back) = if objective {
+                (return_slack, return_radius, RETURN_BACK)
+            } else {
+                (tidy_slack, tidy_radius, BACK)
+            };
+            if slack < 0.0 {
+                j += 1;
+                continue;
+            }
+            // An objective is done after its quest is taken (in the log from the start: anywhere).
+            let first = if objective {
+                let quest = route[j].index;
+                let taken = route[..j]
+                    .iter()
+                    .rposition(|s| s.index == quest && s.kind == Kind::Accept);
+                match taken {
+                    Some(a) => a + 1,
+                    None if self.model.initial.accepted.contains(&(quest as usize)) => 1,
+                    None => j,
+                }
+            } else {
+                1
+            };
             let at = run.states[j + 1].pos;
             let here = |k: usize| run.states[k].pos.dist(&at) <= radius;
             let mut found = None;
-            for i in j.saturating_sub(BACK).max(1)..j {
+            for i in j.saturating_sub(back).max(first).max(1)..j {
                 // Standing there before stop `i`, and going elsewhere before stop `j`.
                 if !here(i) || (i + 1..=j).all(here) {
                     continue;

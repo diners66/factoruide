@@ -296,6 +296,12 @@ pub struct Params {
     /// before going out, not on the way back).
     pub tidy_slack: f64,
     pub tidy_radius: f64,
+    /// The same for a quest's objective near where the route stood long before (up to
+    /// `RETURN_BACK` stops back), its quest already in the log then: done at that first visit,
+    /// within `return_radius` yards, when that costs at most `return_slack` seconds. The player
+    /// would rather not come back to an area for what could have been done there (negative: off).
+    pub return_slack: f64,
+    pub return_radius: f64,
     /// How the character's class fares at each level, in levels of power over the average class
     /// (`overrides/class_power.toml`, by level, empty: 0), and how much its gear counts for what it
     /// takes on (1 = average). Set from the class of the request, not read from routing.toml.
@@ -624,6 +630,8 @@ impl Default for Params {
             class_power_slack: 600.0,
             tidy_slack: 30.0,
             tidy_radius: 100.0,
+            return_slack: 300.0,
+            return_radius: 200.0,
             class_curve: Vec::new(),
             gear_dependence: 1.0,
             power_curve: Vec::new(),
