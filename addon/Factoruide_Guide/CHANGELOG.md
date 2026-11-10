@@ -6,6 +6,8 @@ under Unreleased; `scripts/release.sh` gives them the release's version.
 
 ## Unreleased
 
+- A quest of the guide the game does not have (asked to the server), or its giver does not offer when you talk to it, is passed with its steps, said in the chat; the app leaves it out of your next guides.
+
 ## 0.16.0 (2026-11-07)
 
 - WoW Forever: no more "ADDON_ACTION_BLOCKED: SetPassThroughButtons" message when the world map is open during a fight.

@@ -182,4 +182,6 @@ FG.Locales.ruRU = {
     ["%s: %d steps left"] = "%s: осталось шагов: %d",
     ["Skip the dungeon"] = "Пропустить подземелье",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "Отмечает невыполненные шаги подземелья как выполненные: его незаконченные задания откладываются.",
+    ["%s is not in the game: passed"] = "Задания «%s» нет в игре: пропущено",
+    ["%s is not offered by %s: passed"] = "Задание «%s» не предлагает %s: пропущено",
 }

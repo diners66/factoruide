@@ -77,6 +77,24 @@ pub struct StartState {
     pub reputation: Vec<Standing>,
     /// When it was recorded (unix seconds).
     pub time: i64,
+    /// Quests the game does not give the character (the guide addon found them not on the
+    /// server, or not offered by their giver): left out of its guides.
+    pub unavailable: Vec<Unavailable>,
+}
+
+/// A quest the game does not give the character, as the guide addon found it.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Unavailable {
+    pub id: i64,
+    /// "missing" (the server does not know it) or "not offered" (its giver did not offer it).
+    pub why: String,
+    /// The giver that did not offer it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub npc: Option<i64>,
+    /// The character's level then.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub level: Option<i64>,
 }
 
 /// Points with a faction (Faction ID), counted from the bottom of Neutral.

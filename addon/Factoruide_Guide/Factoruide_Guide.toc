@@ -35,6 +35,7 @@ TalentBuilds_tbc.lua
 Automation.lua
 Group.lua
 Guide.lua
+Availability.lua
 Card.lua
 Mini.lua
 Compass.lua

@@ -182,4 +182,6 @@ FG.Locales.esES = {
     ["%s: %d steps left"] = "%s: quedan %d pasos",
     ["Skip the dungeon"] = "Saltar la mazmorra",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "Marca como hechos los pasos no hechos de la mazmorra: sus misiones sin terminar se dejan de lado.",
+    ["%s is not in the game: passed"] = "%s no está en el juego: omitida",
+    ["%s is not offered by %s: passed"] = "%s no lo ofrece %s: omitida",
 }

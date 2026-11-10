@@ -240,6 +240,8 @@ function IsDone(step, index)
         if group:SkipShared(step, index or state.step) then return true, true end
         return false
     end
+    -- Not in the game, or not offered by its giver (Availability.lua): passed with its steps.
+    if q and FG.Availability and FG.Availability:Passed(q) then return true, true end
     if group:Active() and step.mb then
         -- Players catching up: done once each one is where the guide plans it.
         if step.k == "grind" then return group:CaughtUp(step) end
@@ -1422,6 +1424,7 @@ function Guide:Choose(name)
     if not name then UseRoute(PickRoute()) end
     self:Resync()
     FG.Options:Refresh()
+    FG.Availability:GuideChanged()
 end
 
 --- The name of the guide followed, nil when none.

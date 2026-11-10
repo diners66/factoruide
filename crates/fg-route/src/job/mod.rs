@@ -49,7 +49,7 @@ pub use routes::{
 };
 pub(crate) use services::profession_of;
 pub use services::{Place, Service, places, services_lua};
-pub use start::{Bind, LogObjective, LogQuest, MapPos, QuestId, Skill, Standing, StartState};
+pub use start::{Bind, LogObjective, LogQuest, MapPos, QuestId, Skill, Standing, StartState, Unavailable};
 #[cfg(any(test, feature = "testing"))]
 pub(crate) use starts::preview_starts_of;
 pub use starts::{StartCandidate, StartOption, StartPreview, preview_starts};
@@ -246,6 +246,12 @@ pub fn manual(
 /// Everything a route is planned from: the character, the settings, the world and the quests.
 pub fn prepare(conn: &Connection, overrides: &Overrides, req: &PlanRequest, progress: Watch<'_>) -> Result<Prepared> {
     let (mut profile, mut params) = character(conn, overrides, req)?;
+    let unavailable = unavailable_quests(req);
+    for u in &unavailable {
+        if !params.excluded_quests.contains(&u.id) {
+            params.excluded_quests.push(u.id);
+        }
+    }
     profile.required_quests = required::resolve(conn, req, &profile, &params)?;
     if params.edition == crate::xp::Edition::Forever
         && params.sleeping_bag
@@ -334,6 +340,7 @@ pub fn prepare(conn: &Connection, overrides: &Overrides, req: &PlanRequest, prog
     model.initial.reputation = reputation::starting(conn, &params.reputation_goals, &profile, start, &mut start_notes)?;
     let mut notes = notes::model_notes(&model, &world);
     notes.extend(start_notes);
+    notes.extend(unavailable_note(conn, &unavailable));
     Ok(Prepared {
         profile,
         params,
@@ -342,6 +349,44 @@ pub fn prepare(conn: &Connection, overrides: &Overrides, req: &PlanRequest, prog
         notes,
         diagnostics: Diagnostics::default(),
     })
+}
+
+/// Quests the game does not give the character or a member of its group (the guide addon's
+/// findings, in their profiles), once each.
+fn unavailable_quests(req: &PlanRequest) -> Vec<Unavailable> {
+    let mut out: Vec<Unavailable> = Vec::new();
+    let starts = req.start.iter().chain(&req.mates);
+    for u in starts.flat_map(|s| s.unavailable.iter()) {
+        if !out.iter().any(|o| o.id == u.id) {
+            out.push(u.clone());
+        }
+    }
+    out
+}
+
+/// The note naming the quests left out because the game does not give them.
+fn unavailable_note(conn: &Connection, unavailable: &[Unavailable]) -> Option<String> {
+    if unavailable.is_empty() {
+        return None;
+    }
+    let named: Vec<String> = unavailable
+        .iter()
+        .map(|u| {
+            let name = conn
+                .query_row("SELECT name FROM m_quest WHERE id = ?1", [u.id], |r| {
+                    r.get::<_, Option<String>>(0)
+                })
+                .ok()
+                .flatten()
+                .unwrap_or_else(|| format!("Quest {}", u.id));
+            let why = if u.why == "missing" { "not in the game" } else { "not offered by its giver" };
+            format!("{name} ({}, {why})", u.id)
+        })
+        .collect();
+    Some(format!(
+        "Left out, the game does not give them to this character: {}",
+        named.join(", ")
+    ))
 }
 
 /// A dungeon guide is planned at the level its quests need (`dungeon_guide_level`; the app warns

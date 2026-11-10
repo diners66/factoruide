@@ -39,6 +39,7 @@ pub fn read(files: &[PathBuf]) -> Result<Vec<serde_json::Value>> {
                 .collect();
             flights.extend(recorded_flights(db.field("characters").field(key)));
             json["flights"] = flights.into_iter().collect();
+            json["unavailable"] = unavailable(db.field("characters").field(key)).into();
             if json["name"].as_str().is_none_or(str::is_empty) {
                 json["name"] = key.into();
             }
@@ -58,6 +59,29 @@ pub fn read(files: &[PathBuf]) -> Result<Vec<serde_json::Value>> {
     }
     out.sort_by_key(|p| std::cmp::Reverse(p["time"].as_i64().unwrap_or(0)));
     Ok(out)
+}
+
+/// Quests the game does not give the character (the guide addon's Availability.lua): not on
+/// the server, or not offered by their giver. By quest ID.
+fn unavailable(character: &Val) -> Vec<serde_json::Value> {
+    let mut out: Vec<(i64, serde_json::Value)> = character
+        .field("unavailable")
+        .entries()
+        .into_iter()
+        .filter_map(|(id, entry)| {
+            let why = entry.field("why").str()?;
+            let mut json = serde_json::json!({ "id": id, "why": why });
+            if let Some(npc) = entry.field("npc").int() {
+                json["npc"] = npc.into();
+            }
+            if let Some(level) = entry.field("level").int() {
+                json["level"] = level.into();
+            }
+            Some((id, json))
+        })
+        .collect();
+    out.sort_by_key(|(id, _)| *id);
+    out.into_iter().map(|(_, json)| json).collect()
 }
 
 /// Flight paths shown known on the flight maps the collector recorded (`taxi` events).
@@ -115,5 +139,37 @@ mod tests {
         assert_eq!(brouz["flights"], serde_json::json!([23, 25]));
         assert_eq!(brouz["completed"], serde_json::json!([4641, 788]));
         assert_eq!(brouz["log"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn profiles_carry_the_quests_the_game_does_not_give() {
+        let dir = std::env::temp_dir().join(format!("fg-profile-unavailable-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("Factoruide.lua");
+        std::fs::write(
+            &file,
+            r#"FactoruideDB = {
+                ["characters"] = { ["Zev-Realm"] = { ["seq"] = 0, ["events"] = {}, ["unavailable"] = {
+                    [9267] = { ["why"] = "missing", ["level"] = 18, ["time"] = 50 },
+                    [851] = { ["why"] = "not offered", ["npc"] = 3389, ["level"] = 18, ["time"] = 60 },
+                } } },
+                ["profiles"] = {
+                    ["Zev-Realm"] = { ["level"] = 18, ["time"] = 200, ["completed"] = {}, ["log"] = {} },
+                    ["Other-Realm"] = { ["level"] = 5, ["time"] = 100 },
+                },
+            }"#,
+        )
+        .unwrap();
+        let profiles = read(&[file]).unwrap();
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert_eq!(
+            profiles[0]["unavailable"],
+            serde_json::json!([
+                { "id": 851, "why": "not offered", "npc": 3389, "level": 18 },
+                { "id": 9267, "why": "missing", "level": 18 },
+            ]),
+            "by quest"
+        );
+        assert_eq!(profiles[1]["unavailable"], serde_json::json!([]), "none recorded");
     }
 }

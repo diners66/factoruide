@@ -739,6 +739,95 @@ useRoute("skip-test")
 assert(not char.guide.marks[1] and char.guide.skippedQuests[5004], "new version")
 print("progress per guide ok")
 
+-- Quests the game does not have (the server says so twice) or their giver does not offer:
+-- passed, kept for the app (Availability.lua).
+do
+    local events = #char.events
+    local requested = {}
+    C_QuestLog.RequestLoadQuestByID = function(q) table.insert(requested, q) end
+    local savedGUID, savedAvailable, savedActive = UnitGUID, C_GossipInfo.GetAvailableQuests, C_GossipInfo.GetActiveQuests
+    local npc = 900
+    UnitGUID = function(u) return u == "npc" and ("Creature-0-1-2-3-" .. npc .. "-0000") or savedGUID(u) end
+    UnitName = function(u) return u == "npc" and "Giver" or "Brouz" end
+    local offered, active = {}, {}
+    C_GossipInfo.GetAvailableQuests = function() return offered end
+    C_GossipInfo.GetActiveQuests = function() return active end
+    playerLevel = 21
+    FG.Routes["avail-test"] = {
+        race = 7,
+        class = 8,
+        faction = "Alliance",
+        fromLevel = 21,
+        toLevel = 60,
+        time = 1,
+        steps = {
+            { k = "accept", t = "Accept Real from Giver", q = 6001, e = "npc", id = 900, n = "Giver", lvl = 21 },
+            { k = "accept", t = "Accept Never Offered from Giver", q = 6002, e = "npc", id = 900, n = "Giver", lvl = 21 },
+            { k = "turnin", t = "Turn in Real to Ender", q = 6001, e = "npc", id = 901, n = "Ender", lvl = 21 },
+            { k = "accept", t = "Accept After Turn-in from Ender", q = 6004, e = "npc", id = 901, n = "Ender", lvl = 21 },
+            { k = "accept", t = "Accept Old Version from Far", q = 6003, e = "npc", id = 902, n = "Far", lvl = 21 },
+            { k = "turnin", t = "Turn in Old Version to Far", q = 6003, e = "npc", id = 902, n = "Far", lvl = 21 },
+            { k = "grind", t = "Grind", lvl = 60 },
+        },
+    }
+    useRoute("avail-test")
+    runTimers()
+    table.sort(requested)
+    assert(table.concat(requested, ",") == "6001,6002,6003,6004", "asked: " .. table.concat(requested, ","))
+    -- Another addon's request is not ours; a "yes" leaves the quest; one "no" asks again.
+    fire("QUEST_DATA_LOAD_RESULT", 7777, false)
+    fire("QUEST_DATA_LOAD_RESULT", 6001, true)
+    fire("QUEST_DATA_LOAD_RESULT", 6003, false)
+    assert(not char.unavailable[7777] and not char.unavailable[6003], "one no is not enough")
+    requested = {}
+    runTimers()
+    assert(requested[1] == 6003, "asked once more")
+    fire("QUEST_DATA_LOAD_RESULT", 6003, false)
+    assert(char.unavailable[6003] and char.unavailable[6003].why == "missing", "missing after two")
+    assert(char.unavailable[6003].level == 21, "the level kept")
+
+    -- The giver of the current steps lists only one of its two quests.
+    offered = { { questID = 6001, questLevel = 21 } }
+    fire("GOSSIP_SHOW")
+    assert(char.unavailable[6002] and char.unavailable[6002].why == "not offered", "not offered")
+    assert(char.unavailable[6002].npc == 900, "its giver")
+    assert(not char.unavailable[6001], "the offered one stays")
+    -- Taken: its step done; the one not offered passed, the guide on the turn-in.
+    onQuest[6001] = true
+    fire("QUEST_ACCEPTED", 6001)
+    FG.Guide:Advance()
+    assert(char.guide.step == 3, "past the quest not offered, step " .. char.guide.step)
+
+    -- A quest to turn in at the giver may unlock the next one: not judged then.
+    npc, offered, active = 901, {}, { { questID = 6001, isComplete = true } }
+    fire("GOSSIP_SHOW")
+    assert(not char.unavailable[6004], "not judged before the turn-in")
+    -- Nor below the step's level.
+    onQuest[6001], completed[6001], active = nil, true, {}
+    playerLevel = 20
+    fire("GOSSIP_SHOW")
+    assert(not char.unavailable[6004], "not judged below its level")
+    playerLevel = 21
+    -- The missing quest's steps are passed too: the guide waits at the grind.
+    onQuest[6004] = true
+    FG.Guide:Advance()
+    assert(char.guide.step == 7, "missing quest passed, step " .. char.guide.step)
+
+    -- Taken after all (a new version of the game): no longer unavailable.
+    fire("QUEST_ACCEPTED", 6002)
+    assert(not char.unavailable[6002], "accepted: available")
+    char.unavailable[6003] = nil
+    onQuest[6001], onQuest[6004], completed[6001] = nil, nil, nil
+    UnitGUID, C_GossipInfo.GetAvailableQuests, C_GossipInfo.GetActiveQuests = savedGUID, savedAvailable, savedActive
+    UnitName = function() return "Brouz" end
+    C_QuestLog.RequestLoadQuestByID = nil
+    -- The collector's rows of these quests go: later tests read the last ones.
+    for i = #char.events, events + 1, -1 do
+        char.events[i] = nil
+    end
+end
+print("availability ok")
+
 -- A book for the library (GitHub #29): looting it is the accept, the librarian offers the
 -- quest only then, taken and turned in together.
 FG.Routes["held-test"] = {

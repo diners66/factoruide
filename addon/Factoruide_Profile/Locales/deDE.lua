@@ -182,4 +182,6 @@ FG.Locales.deDE = {
     ["%s: %d steps left"] = "%s: noch %d Schritte",
     ["Skip the dungeon"] = "Dungeon überspringen",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "Markiert die nicht erledigten Schritte des Dungeons als erledigt: seine unfertigen Quests werden beiseitegelassen.",
+    ["%s is not in the game: passed"] = "%s gibt es im Spiel nicht: übersprungen",
+    ["%s is not offered by %s: passed"] = "%s wird von %s nicht angeboten: übersprungen",
 }

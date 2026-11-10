@@ -182,4 +182,6 @@ FG.Locales.koKR = {
     ["%s: %d steps left"] = "%s: %d단계 남음",
     ["Skip the dungeon"] = "던전 건너뛰기",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "던전에서 끝나지 않은 단계를 완료로 표시합니다. 끝내지 못한 퀘스트는 제외됩니다.",
+    ["%s is not in the game: passed"] = "%s 퀘스트는 게임에 없습니다: 건너뜀",
+    ["%s is not offered by %s: passed"] = "%s 퀘스트를 %s이(가) 주지 않습니다: 건너뜀",
 }

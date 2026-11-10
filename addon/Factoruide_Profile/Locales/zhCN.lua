@@ -182,4 +182,6 @@ FG.Locales.zhCN = {
     ["%s: %d steps left"] = "%s：剩余 %d 步",
     ["Skip the dungeon"] = "跳过地下城",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "将地下城中未完成的步骤标记为完成：其未完成的任务被搁置。",
+    ["%s is not in the game: passed"] = "游戏中没有%s：已跳过",
+    ["%s is not offered by %s: passed"] = "%s 不由 %s 提供：已跳过",
 }

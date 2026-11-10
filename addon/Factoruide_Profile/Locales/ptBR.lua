@@ -182,4 +182,6 @@ FG.Locales.ptBR = {
     ["%s: %d steps left"] = "%s: faltam %d etapas",
     ["Skip the dungeon"] = "Pular a masmorra",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "Marca como feitas as etapas não feitas da masmorra: suas missões não terminadas ficam de lado.",
+    ["%s is not in the game: passed"] = "%s não está no jogo: pulada",
+    ["%s is not offered by %s: passed"] = "%s não é oferecida por %s: pulada",
 }

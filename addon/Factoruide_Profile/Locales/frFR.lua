@@ -280,4 +280,6 @@ FG.Locales.frFR = {
     ["%s: %d steps left"] = "%s : %d étapes restantes",
     ["Skip the dungeon"] = "Passer le donjon",
     ["Mark the dungeon's steps not done as done: its quests not finished are left aside."] = "Marque comme faites les étapes du donjon qui ne le sont pas : ses quêtes non finies sont laissées de côté.",
+    ["%s is not in the game: passed"] = "%s n'est pas dans le jeu : passée",
+    ["%s is not offered by %s: passed"] = "%s n'est pas proposée par %s : passée",
 }
