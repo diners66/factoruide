@@ -83,7 +83,16 @@ Checked in game (2026-11-10): `C_QuestLog.RequestLoadQuestByID` answers
   marks dropped when offered or at a level up; marks in the FGP1: export for the web app.
 - Planner: in a group, "not offered" leaves a quest out only when to every player.
 - Search: `State::taken` keeps only the quests in the log; the incremental evaluation compares
-  returns by order (`State::same_returns`), not by stop index.
+  returns by order (`State::same_returns`), not by stop index. Zev 18-60, effort 0.3, one run
+  each, nothing else running:
+
+  | | weight 0 | weight 300 |
+  |---|---|---|
+  | before | 113 s, 99h56 | 123 s, 99h11 |
+  | after | 112 s, 99h56 (same guide) | 117 s, 98h21 |
+
+  Off: unchanged. On: the search costs 4% more time instead of 9%, and finds a better route
+  (the exact early stop is taken more often, so fewer moves are judged on an estimate).
 
 ## Checks
 
