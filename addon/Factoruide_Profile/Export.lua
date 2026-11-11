@@ -93,8 +93,23 @@ end
 
 -- The export ----------------------------------------------------------------------------------
 
---- The profile as the app reads it: the flight paths known as a sorted list of their IDs.
-local function ProfileForApp(profile)
+--- The quests the game does not give the character (the guide's Availability.lua), as the
+--- desktop app reads them from the saved variables (fg-contrib's profile.rs): a list by quest ID.
+local function Unavailable(key)
+    local character = FactoruideDB.characters and FactoruideDB.characters[key]
+    local list = {}
+    for id, entry in pairs(character and character.unavailable or {}) do
+        if tonumber(id) and type(entry) == "table" and entry.why then
+            list[#list + 1] = { id = tonumber(id), why = entry.why, npc = entry.npc, level = entry.level }
+        end
+    end
+    table.sort(list, function(a, b) return a.id < b.id end)
+    return list
+end
+
+--- The profile as the app reads it: the flight paths known as a sorted list of their IDs, and
+--- the quests the game does not give.
+local function ProfileForApp(profile, key)
     local copy = {}
     for k, v in pairs(profile) do
         copy[k] = v
@@ -105,6 +120,7 @@ local function ProfileForApp(profile)
     end
     table.sort(flights)
     copy.flights = flights
+    copy.unavailable = Unavailable(key)
     return copy
 end
 
@@ -120,7 +136,7 @@ function Export:Json()
         edition = FG.Edition,
         addon = metadata and metadata(addonName, "Version") or "?",
         character = key,
-        profile = ProfileForApp(profile),
+        profile = ProfileForApp(profile, key),
     })
 end
 

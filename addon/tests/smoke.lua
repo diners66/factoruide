@@ -865,6 +865,102 @@ do
 end
 print("availability ok")
 
+-- A quest is only judged "not offered" when nothing on the way may still unlock it, and a mark
+-- that may be wrong goes again (review of the quest truth, 2026-11-11).
+do
+    local events = #char.events
+    local requested = {}
+    C_QuestLog.RequestLoadQuestByID = function(q) table.insert(requested, q) end
+    local savedGUID, savedAvailable, savedActive = UnitGUID, C_GossipInfo.GetAvailableQuests, C_GossipInfo.GetActiveQuests
+    local savedID = GetQuestID
+    local npc = 910
+    UnitGUID = function(u) return u == "npc" and ("Creature-0-1-2-3-" .. npc .. "-0000") or savedGUID(u) end
+    UnitName = function(u) return u == "npc" and "Giver" or "Brouz" end
+    local offered, active = {}, {}
+    C_GossipInfo.GetAvailableQuests = function() return offered end
+    C_GossipInfo.GetActiveQuests = function() return active end
+    playerLevel = 21
+    FG.Routes["avail-ahead"] = {
+        race = 7,
+        class = 8,
+        faction = "Alliance",
+        fromLevel = 21,
+        toLevel = 60,
+        time = 1,
+        steps = {
+            { k = "accept", t = "Accept First from Giver", q = 6101, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "accept", t = "Accept Listed Too from Giver", q = 6105, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "turnin", t = "Turn in Earlier to Other", q = 6100, e = "npc", id = 911, n = "Other", lvl = 21 },
+            { k = "accept", t = "Accept After Other from Giver", q = 6102, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "accept", t = "Accept Held from Third", q = 6103, e = "npc", id = 912, n = "Third", lvl = 21 },
+            { k = "accept", t = "Accept Needs Held from Giver", q = 6104, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "accept", t = "Accept Lost from Giver", q = 6106, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "grind", t = "Grind", lvl = 60 },
+        },
+    }
+    onQuest[6100] = true
+    useRoute("avail-ahead")
+    runTimers()
+    -- The server knows them all, for now.
+    for _, q in ipairs(requested) do
+        fire("QUEST_DATA_LOAD_RESULT", q, true)
+    end
+
+    -- 1. A turn-in at another NPC (or a quest taken elsewhere) before a later accept here may
+    -- unlock it: that accept is not judged.
+    offered = { { questID = 6101, questLevel = 21 }, { questID = 6105, questLevel = 21 } }
+    fire("GOSSIP_SHOW")
+    assert(not char.unavailable[6102], "a turn-in elsewhere first: not judged")
+    assert(not char.unavailable[6104], "a quest taken elsewhere first: not judged")
+    assert(not char.unavailable[6105], "listed: offered")
+
+    -- 2. Picked from the list: the gossip closes as the quest's text opens; the giver's other
+    -- quests are not judged on that window.
+    fire("GOSSIP_CLOSED")
+    GetQuestID = function() return 6101 end
+    fire("QUEST_DETAIL", 0)
+    assert(not char.unavailable[6105], "picked from a list: the others not judged")
+    GetQuestID = savedID
+
+    -- 3. A quest the server did not know is asked again later (the next login, a guide chosen):
+    -- a "yes" then removes it.
+    char.unavailable[6106] = { why = "missing", level = 20, time = 1 }
+    requested = {}
+    FG.Availability:Check()
+    runTimers()
+    local asked = {}
+    for _, q in ipairs(requested) do
+        asked[q] = true
+    end
+    assert(asked[6106], "missing asked again: " .. table.concat(requested, ","))
+    fire("QUEST_DATA_LOAD_RESULT", 6106, true)
+    assert(not char.unavailable[6106], "known after all")
+
+    -- 4. Not offered once, offered at a later visit: no longer unavailable.
+    char.unavailable[6105] = { why = "not offered", npc = 910, level = 21, time = 1 }
+    fire("GOSSIP_SHOW")
+    assert(not char.unavailable[6105], "offered at a later visit")
+
+    -- 5. A level up may unlock what was not offered: those marks go; missing ones stay.
+    char.unavailable[6105] = { why = "not offered", npc = 910, level = 21, time = 1 }
+    char.unavailable[6106] = { why = "missing", level = 21, time = 1 }
+    playerLevel = 22
+    fire("PLAYER_LEVEL_UP", 22)
+    assert(not char.unavailable[6105], "level up: not offered goes")
+    assert(char.unavailable[6106] and char.unavailable[6106].why == "missing", "level up: missing stays")
+    playerLevel = 21
+
+    char.unavailable[6105], char.unavailable[6106] = nil, nil
+    onQuest[6100] = nil
+    UnitGUID, C_GossipInfo.GetAvailableQuests, C_GossipInfo.GetActiveQuests = savedGUID, savedAvailable, savedActive
+    UnitName = function() return "Brouz" end
+    C_QuestLog.RequestLoadQuestByID = nil
+    for i = #char.events, events + 1, -1 do
+        char.events[i] = nil
+    end
+end
+print("availability kept right ok")
+
 -- A book for the library (GitHub #29): looting it is the accept, the librarian offers the
 -- quest only then, taken and turned in together.
 FG.Routes["held-test"] = {
@@ -4221,6 +4317,21 @@ local function ExportImport()
     assert(json:find('"flights":[2,12]', 1, true), "flights as a sorted list")
     assert(not json:find('"collector"', 1, true) and not json:find("|kill|", 1, true), "no collector rows")
     assert(json:find('"level":4', 1, true), "a fresh snapshot")
+    -- The quests the game does not give (the guide's Availability.lua), for the web app too.
+    char.unavailable = {
+        [9267] = { why = "missing", level = 18, time = 50 },
+        [851] = { why = "not offered", npc = 3389, level = 18, time = 60 },
+    }
+    local withUnavailable = FG.Export:Json()
+    char.unavailable = {}
+    assert(
+        withUnavailable:find(
+            '"unavailable":[{"id":851,"level":18,"npc":3389,"why":"not offered"},{"id":9267,"level":18,"why":"missing"}]',
+            1,
+            true
+        ),
+        "unavailable in the export: " .. withUnavailable
+    )
     local parsed = PythonJson(
         json,
         "assert d['format'] == 'factoruide-profile' and d['version'] == 1 and d['edition'] == 'forever'; "

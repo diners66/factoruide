@@ -105,7 +105,8 @@ function Availability:Check()
             q
             and step.k == "accept"
             and not seen[q]
-            and not (store[q] and store[q].why == "missing")
+            -- Those found missing too: a "yes" now (a server answer lost at login, a new version
+            -- of the game) gives them back.
             and not QuestLog.IsOnQuest(q)
             and not QuestLog.IsQuestFlaggedCompleted(q)
         then
@@ -145,8 +146,9 @@ local AHEAD = 20
 
 --- Accept steps at this giver, from the current step on (a few ahead), whose quest is neither
 --- offered nor in the log nor done. Those after a quest to turn in there first are not judged
---- (the turn-in may unlock them), nor any when the window lists a quest to turn in, nor those
---- above the character's level.
+--- (the turn-in may unlock them), nor those after a turn-in or an accept at another NPC still
+--- to do, nor any when the window lists a quest to turn in, nor those above the character's
+--- level.
 local function NotOffered(entityType, entityID, offered, turnins)
     local route = FG.Guide:Route()
     if not route or turnins then return {} end
@@ -161,6 +163,17 @@ local function NotOffered(entityType, entityID, offered, turnins)
             and not QuestLog.IsQuestFlaggedCompleted(step.q)
         then
             return {}
+        end
+        -- A turn-in elsewhere, or a quest taken elsewhere, may unlock the accepts after it (a
+        -- prerequisite, a quest to hold): those are judged at a later visit, not now.
+        if
+            (step.k == "turnin" or step.k == "accept")
+            and not (step.e == entityType and step.id == entityID)
+            and step.q
+            and not QuestLog.IsQuestFlaggedCompleted(step.q)
+            and not (step.k == "accept" and QuestLog.IsOnQuest(step.q))
+        then
+            break
         end
         if
             step.k == "accept"
@@ -180,6 +193,10 @@ end
 local function Judge(offered, turnins)
     local entityType, entityID, name = Giver()
     if not (store and entityType and entityID) then return end
+    -- Offered now: a quest once not offered is again (a step done since, a level reached).
+    for q in pairs(offered) do
+        if store[q] and store[q].why == "not offered" then store[q] = nil end
+    end
     for _, q in ipairs(NotOffered(entityType, entityID, offered, turnins)) do
         Mark(q, "not offered", name, entityID)
     end
@@ -220,8 +237,17 @@ FG:On("QUEST_DETAIL", function(questStartItemID)
     Judge({ [questID] = true }, false)
 end)
 
-FG:On("GOSSIP_CLOSED", function() lastList = nil end)
-FG:On("QUEST_FINISHED", function() lastList = nil end)
+-- The list is not forgotten when its window closes: choosing a quest in it closes the gossip
+-- before the quest's text opens (QUEST_DETAIL), which would then judge the giver's other quests.
+
+-- A new level may unlock a quest that was not offered: judged again at the next visit. Those
+-- the server does not know stay (asked again at each login).
+FG:On("PLAYER_LEVEL_UP", function()
+    if not store then return end
+    for q, entry in pairs(store) do
+        if entry.why == "not offered" then store[q] = nil end
+    end
+end)
 
 -- Taken after all (another giver, a later version of the game): no longer unavailable.
 FG:On("QUEST_ACCEPTED", function(arg1, arg2)
