@@ -45,25 +45,25 @@
 - Produces: `Params::strict_levels: bool`, `Params::levels_below: i64`, `Params::level_window(&self, level: i64) -> Option<std::ops::RangeInclusive<i64>>` (None when `strict_levels` is off, else `level - levels_below..=level`).
 - Produces: `Combat::level_at` and `Combat::guard_level` return at least the mob level (`o.mob_level` for an objective with `kills > 0`, `g.level` for a guard with `count > 0`) when `strict_levels` is on.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `strict_levels_never_plan_a_mob_above` builds a `Params::default()` (strict on) with `progression_margin = Some(5.0)` (generous margin), a quest of level 10 and an objective with `kills = 8.0, mob_level = 12`, and asserts `Combat::level_at(..) >= 12`; with `strict_levels = false` it asserts `< 12` (the margin lets it through). `strict_guard_needs_its_level`: a `Guard { level: 14, count: 3, .. }` gives `guard_level >= 14`. `old_request_gets_the_new_defaults`: `serde_json::from_str::<Params>("{}")` (or the request type the app sends, whichever `Params` derives from) has `strict_levels == true` and `levels_below == 4`.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p fg-route strict_ -- --nocapture`
 Expected: FAIL to compile (`strict_levels` unknown).
 
-- [ ] **Step 3: Add the fields, defaults, `level_window`, and the `max` in `level_at` / `guard_level`**
+- [x] **Step 3: Add the fields, defaults, `level_window`, and the `max` in `level_at` / `guard_level`**
 
 Doc comments in the file's style (what, then why). In `level_at`, apply the `max` only when the objective has kills; leave the `need <= 0.0 => 0` early return for non-kill objectives untouched.
 
-- [ ] **Step 4: Run the new tests and the whole crate**
+- [x] **Step 4: Run the new tests and the whole crate**
 
 Run: `cargo test -p fg-route`
 Expected: the three new tests PASS. Upstream tests that break because they relied on fighting above level: set `p.params.strict_levels = false` in those tests (list them in the commit message).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(route): never plan mobs above the character's level (strict_levels)"`
 
@@ -83,7 +83,7 @@ Expected: the three new tests PASS. Upstream tests that break because they relie
 - Produces: `Availability::too_low(&self, s: &State, q: &Quest, i: u32) -> bool` — true when the window is on, the quest is not `mandatory`, not `replaying`, and some kill objective not yet done (`s.objectives[i] & (1 << k) == 0`) has **every** place (`o.places()`) with `mob_level < window.start()`.
 - Produces: `why_invalid` reason string `"mobs too low for the level window"`.
 
-- [ ] **Step 1: Write the failing tests** (build on `quests_at_start`)
+- [x] **Step 1: Write the failing tests** (build on `quests_at_start`)
 
 - `too_low_quest_is_not_taken`: character level 15, quest with mobs level 10 → `can_accept` false; mobs level 11 → true.
 - `too_low_in_the_log_is_given_up`: the quest is in the initial log, level 15, mobs level 10 → after the first stop the quest is abandoned (`s.turned[i]` true, `s.accepted[i]` false, no XP for it).
@@ -91,19 +91,19 @@ Expected: the three new tests PASS. Upstream tests that break because they relie
 - `mandatory_low_quest_stays`: same as the first with `mandatory = true` → `can_accept` true.
 - `low_place_skipped_for_a_place_in_window`: one objective with two places at mob levels 9 and 13, character 15 → accepted, and the stop goes to the level-13 place.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p fg-route too_low low_place done_objectives mandatory_low`
 Expected: FAIL (no `too_low`).
 
-- [ ] **Step 3: Implement `too_low`, use it in `can_accept`, `abandon_hopeless` and `why_invalid`, and filter the places in `spot.rs`**
+- [x] **Step 3: Implement `too_low`, use it in `can_accept`, `abandon_hopeless` and `why_invalid`, and filter the places in `spot.rs`**
 
-- [ ] **Step 4: Run the crate's tests**
+- [x] **Step 4: Run the crate's tests**
 
 Run: `cargo test -p fg-route`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(route): quests with mobs more than levels_below under the character are left out"`
 
@@ -120,23 +120,23 @@ Expected: all PASS.
 - Consumes: `Params::level_window` (Task 1).
 - Produces: `Params::farm_levels(&self, level: i64) -> RangeInclusive<i64>` — `level - farm_below ..= level + farm_above`, intersected with `level_window` when on. Both call sites use it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `farm_window_follows_strict_levels`: defaults, `farm_above = 2`, `farm_below = 6`, level 20 → `farm_levels(20) == 16..=20`; with `strict_levels = false` → `14..=22`. `hub_mode_is_on_by_default`: `Params::default().camp_radius == 40.0`.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p fg-route farm_window hub_mode`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement `farm_levels`, use it at both call sites, change the `camp_radius` default**
+- [x] **Step 3: Implement `farm_levels`, use it at both call sites, change the `camp_radius` default**
 
-- [ ] **Step 4: Run the crate's tests**
+- [x] **Step 4: Run the crate's tests**
 
 Run: `cargo test -p fg-route`
 Expected: all PASS. Tests needing `camp_radius = 0` already set it (`quests_at_start`); any other that breaks sets it explicitly.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(route): farming follows the level window; quest hubs on by default"`
 
@@ -152,16 +152,16 @@ Expected: all PASS. Tests needing `camp_radius = 0` already set it (`quests_at_s
 **Interfaces:**
 - Consumes: the two `Params` fields (Task 1), serialized under the same names.
 
-- [ ] **Step 1: Add the two entries**
+- [x] **Step 1: Add the two entries**
 
 `strict_levels`: kind boolean (as other boolean entries in the file), label "Jamais de mobs au-dessus de mon niveau", help "Les quêtes ne vous envoient que contre des mobs de votre niveau ou jusqu'à N niveaux en dessous ; plus bas ou grises, elles sont laissées." `levels_below`: kind number, label "Mobs au plus N niveaux en dessous", unit "niveaux", min 0, max 10, step 1. French labels like the rest of the file (the i18n step translates).
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 Run (in `app/`): `npm run build && npm run lint && npm run check:i18n`
 Expected: no errors; add the translations `check:i18n` asks for.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 `git commit -m "feat(app): settings for the level window"`
 
@@ -172,20 +172,20 @@ Expected: no errors; add the translations `check:i18n` asks for.
 **Files:**
 - Create: `scripts/check-level-window.mjs` (or a Rust test in `crates/fg/`, whichever reads the exported guide more simply) — reads a guide JSON and lists each kill step's character level and mob level.
 
-- [ ] **Step 1: Generate a guide from the real profile**
+- [x] **Step 1: Generate a guide from the real profile**
 
 Run the `fg` CLI on `data/forever.sqlite.zst` for the user's character (Undead Warlock 16, The Crossroads, from `WTF/Account/DINERS66/SavedVariables/Factoruide_Profile.lua`; see `fg route --help` for the profile/start option) to level 30.
 
-- [ ] **Step 2: Check it**
+- [x] **Step 2: Check it**
 
 Run: `node scripts/check-level-window.mjs <guide.json>`
 Expected: 0 kill steps with mob level above the character's level or more than 4 below; the first steps at The Crossroads take every planned Crossroads quest before leaving.
 
-- [ ] **Step 3: Build the desktop app**
+- [x] **Step 3: Build the desktop app**
 
 Run (in `app/`): `npm run tauri build`
 Expected: an installer under `target/release/bundle/nsis/`. Confirm in the app's settings that automatic contributions are off.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 `git commit -m "test: check the level window on a generated guide"`

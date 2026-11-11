@@ -187,7 +187,14 @@ mod tests {
         let run = |args: &[&std::path::Path]| {
             let out = std::process::Command::new(lua).arg(script).args(args).output().unwrap();
             assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
-            String::from_utf8(out.stdout).unwrap()
+            let stdout = String::from_utf8(out.stdout).unwrap();
+            // Lua writes stdout in text mode: on Windows every "\n" comes out as "\r\n" (the
+            // texts compared here hold no "\r" of their own).
+            if cfg!(windows) {
+                stdout.replace("\r\n", "\n")
+            } else {
+                stdout
+            }
         };
         let encoded = dir.join("encoded.txt");
         std::fs::write(&encoded, encode(GUIDE_PREFIX, text.as_bytes())).unwrap();

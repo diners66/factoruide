@@ -349,10 +349,16 @@ fn chain_mob_floor(quests: &[Quest], index: &HashMap<i64, usize>, i: usize) -> i
         }
         let q = &quests[k];
         for o in q.objectives.iter().filter(|o| o.kills > 0.0 && !o.own_side) {
-            floor = floor.max(o.places().map(|p| p.top_level()).min().unwrap_or(0));
+            floor = floor.max(o.places().map(super::types::Objective::top_level).min().unwrap_or(0));
         }
         let only_one = q.pre_any.iter().filter(|_| q.pre_any.len() == 1);
-        stack.extend(q.pre_all.iter().chain(only_one).chain(&q.pre_held).filter_map(|id| index.get(id)));
+        stack.extend(
+            q.pre_all
+                .iter()
+                .chain(only_one)
+                .chain(&q.pre_held)
+                .filter_map(|id| index.get(id)),
+        );
     }
     floor
 }
