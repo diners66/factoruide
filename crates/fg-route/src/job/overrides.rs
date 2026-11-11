@@ -34,6 +34,9 @@ pub struct Overrides {
     /// Objectives done only once others of their quest are (`[[order]]` of objectives.toml).
     pub objective_orders: Vec<crate::model::ObjectiveOrder>,
     pub quest_overrides: Vec<crate::model::QuestOverride>,
+    /// Quests only this edition has (`exclusive_quests.toml`, WoW Forever's): guides take them
+    /// first (`Params::exclusive_quest_weight`). Sorted.
+    pub exclusive_quests: Vec<i64>,
     pub links: Vec<LinkDef>,
     /// Class teleports quests teach (`[[teleport]]` of travel.toml).
     pub teleports: Vec<crate::model::TeleportDef>,
@@ -223,6 +226,11 @@ impl Overrides {
             quest: Vec<crate::model::QuestOverride>,
         }
         #[derive(Deserialize, Default)]
+        struct ExclusiveQuests {
+            #[serde(default)]
+            quests: Vec<i64>,
+        }
+        #[derive(Deserialize, Default)]
         struct Travel {
             #[serde(default)]
             link: Vec<LinkDef>,
@@ -260,6 +268,12 @@ impl Overrides {
             dungeons: parse_toml::<Dungeons>(&file, "dungeons.toml")?.dungeon,
             objective_orders: parse_toml::<Objectives>(&file, "objectives.toml")?.order,
             quest_overrides: parse_toml::<Quests>(&file, "quests.toml")?.quest,
+            exclusive_quests: {
+                let mut ids = parse_toml::<ExclusiveQuests>(&file, "exclusive_quests.toml")?.quests;
+                ids.sort_unstable();
+                ids.dedup();
+                ids
+            },
             links: travel.link,
             teleports: travel.teleport,
             passes: passes.pass,
@@ -309,6 +323,21 @@ mod tests {
         let cap = |e| Overrides::load_edition(&dir, e).unwrap().params.farm_cap;
         assert!(cap(Edition::Forever) < cap(Edition::Classic));
         assert!((cap(Edition::Classic) - cap(Edition::Tbc)).abs() < 1e-9);
+    }
+
+    /// The quests only WoW Forever has (`exclusive_quests.toml`, made by
+    /// `scripts/forever-exclusive.mjs`): Forever's own, none of the other editions'.
+    #[test]
+    fn forever_has_its_exclusive_quests() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../overrides");
+        let load = |e| Overrides::load_edition(&dir, e).unwrap();
+        let forever = load(Edition::Forever).exclusive_quests;
+        assert!(forever.contains(&78270), "Goblin Lockpicks");
+        assert!(forever.contains(&91723), "Delicate Instruments");
+        assert!(!forever.contains(&783), "A Threat Within is in every edition");
+        assert!(forever.is_sorted());
+        assert!(load(Edition::Classic).exclusive_quests.is_empty());
+        assert!(load(Edition::Tbc).exclusive_quests.is_empty());
     }
 
     /// The files of every game version hold what they share (races, the tram, the zeppelins);
