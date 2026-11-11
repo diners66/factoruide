@@ -343,8 +343,7 @@ impl Simulator<'_> {
                         // when the route takes it soon (its time runs from the accept).
                         let planned = if start {
                             s.planned.flags[iu] & 1 != 0
-                                && (s.planned.accept_at[iu] <= s.at + CAMP_AHEAD
-                                    || self.quest(i).time_limit.is_none())
+                                && (s.planned.accept_at[iu] <= s.at + CAMP_AHEAD || self.quest(i).time_limit.is_none())
                         } else {
                             s.planned.flags[iu] & 2 != 0 && s.accepted[iu] && !s.turned[iu]
                         };

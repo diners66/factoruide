@@ -351,7 +351,11 @@ fn strict_levels_wait_for_the_strongest_mob_at_the_spot() {
         dungeons: &p.model.dungeons,
     };
     let o = &q.objectives[0];
-    assert!(combat.level_at(q, o, Might::PLAIN) >= 15, "{}", combat.level_at(q, o, Might::PLAIN));
+    assert!(
+        combat.level_at(q, o, Might::PLAIN) >= 15,
+        "{}",
+        combat.level_at(q, o, Might::PLAIN)
+    );
     assert!(!combat.fights(q, o, 14, Might::PLAIN));
     assert!(combat.fights(q, o, 15, Might::PLAIN));
 }
@@ -365,7 +369,12 @@ fn a_must_have_deadline_waits_for_its_chain_mobs() {
     let build = |strict: bool| {
         Scenario::new()
             .levels(18, 60)
-            .quest(Q::new(901, "Wish").level(27).min_level(20).kill("Oracle", 30, 1, 1, 50.0, 50.0))
+            .quest(
+                Q::new(901, "Wish")
+                    .level(27)
+                    .min_level(20)
+                    .kill("Oracle", 30, 1, 1, 50.0, 50.0),
+            )
             .quest(Q::new(902, "Binding").level(20).min_level(20).after(&[901]).mandatory())
             .requirement("Pet", &[902])
             .params(|p| p.strict_levels = strict)

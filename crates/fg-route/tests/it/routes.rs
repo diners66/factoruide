@@ -583,7 +583,11 @@ fn an_objective_guide_plans_its_zone_and_quest_whatever_their_level() {
         objectives: vec![GuideObjective::Zone(141), GuideObjective::Quest(983)],
         ..request("nightelf", "warrior", 8, &["strict_levels=false"])
     });
-    assert!(loose.model.above_level.contains(&(916, 3)), "{:?}", loose.model.above_level);
+    assert!(
+        loose.model.above_level.contains(&(916, 3)),
+        "{:?}",
+        loose.model.above_level
+    );
 }
 
 /// Before an objective guide is computed, the app shows the quests left in each zone and those a
@@ -807,7 +811,12 @@ fn pet_quest_comes_early() {
 #[test]
 fn class_quest_is_required_for_its_spell_not_its_name() {
     // The upstream construction, without the level window (it changes which quests fit).
-    let p = prepare("undead", "warlock", 10, &["progression=cautious", "strict_levels=false"]);
+    let p = prepare(
+        "undead",
+        "warlock",
+        10,
+        &["progression=cautious", "strict_levels=false"],
+    );
     let q = |id| &p.model.quests[quest(&p, id).unwrap() as usize];
     let (veil, imp, talk) = (q(1470), q(1485), q(1499));
     assert!(veil.mandatory && imp.mandatory, "both teach the Imp");
@@ -3424,7 +3433,12 @@ fn profession_trainer_stops_are_off_unless_chosen() {
     let plan = |setting: &[&str]| {
         let request = PlanRequest {
             professions: ["leatherworking", "skinning", "mining", "first_aid"].map(goal).to_vec(),
-            ..request("orc", "warrior", 30, &[&["effort=0", "strict_levels=false"], setting].concat())
+            ..request(
+                "orc",
+                "warrior",
+                30,
+                &[&["effort=0", "strict_levels=false"], setting].concat(),
+            )
         };
         job::plan(&database(), &overrides(), &request, &|_| {}).unwrap().route
     };

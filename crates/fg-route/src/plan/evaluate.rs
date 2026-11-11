@@ -222,7 +222,12 @@ impl Planner<'_> {
             if (flags.0 ^ flags.1) & 1 != 0 {
                 for &x in &self.ix.blocked_by[i] {
                     let x = x as usize;
-                    at_hand(x, ahead(x, old.accept_at[x].min(new.accept_at[x])), usize::MAX, &mut start);
+                    at_hand(
+                        x,
+                        ahead(x, old.accept_at[x].min(new.accept_at[x])),
+                        usize::MAX,
+                        &mut start,
+                    );
                 }
             }
         }

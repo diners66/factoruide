@@ -374,7 +374,11 @@ fn unavailable_note(conn: &Connection, unavailable: &[Unavailable]) -> Option<St
                 .ok()
                 .flatten()
                 .unwrap_or_else(|| format!("Quest {}", u.id));
-            let why = if u.why == "missing" { "not in the game" } else { "not offered by its giver" };
+            let why = if u.why == "missing" {
+                "not in the game"
+            } else {
+                "not offered by its giver"
+            };
             format!("{name} ({}, {why})", u.id)
         })
         .collect();

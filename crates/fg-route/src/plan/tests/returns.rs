@@ -126,7 +126,11 @@ fn the_score_counts_a_return_for_a_quest_in_the_log_at_the_first_visit() {
     assert_eq!(returns_of(&p, &route), 1);
     p.params.return_slack = 300.0;
     assert_eq!(returns_of(&p, &tidied(&p, &route)), 0, "done at the first visit");
-    assert_eq!(returns_of(&p, &route_back_to_the_boars(true)), 0, "Tusks taken after it");
+    assert_eq!(
+        returns_of(&p, &route_back_to_the_boars(true)),
+        0,
+        "Tusks taken after it"
+    );
     // A return costs the optimizer `return_weight` on top of the trip.
     let planner = Planner::new(&p.model, &p.world, &p.params, &p.profile);
     let with = planner.simulate(&route, None).unwrap();

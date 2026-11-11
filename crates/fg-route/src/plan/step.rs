@@ -416,9 +416,8 @@ impl Simulator<'_> {
         }
         // Taken during the route (at its stop or at hand before), or in the starting log.
         let accepted = s.taken.iter().find(|&&(t, _)| t == stop.index).map(|&(_, at)| at);
-        let back = |v: &super::state::Visit| {
-            v.left && v.pos.dist(&s.pos) <= radius && accepted.is_none_or(|at| v.at > at)
-        };
+        let back =
+            |v: &super::state::Visit| v.left && v.pos.dist(&s.pos) <= radius && accepted.is_none_or(|at| v.at > at);
         if s.visits.iter().any(back) {
             s.spent.returns += 1;
         }
@@ -427,7 +426,11 @@ impl Simulator<'_> {
         if s.visits.len() >= VISITS {
             s.visits.remove(0);
         }
-        s.visits.push(super::state::Visit { pos, at: s.at, left: false });
+        s.visits.push(super::state::Visit {
+            pos,
+            at: s.at,
+            left: false,
+        });
     }
 
     fn do_apply(&self, s: &mut State, stop: Stop, record: &mut impl FnMut(&State, Event)) {
