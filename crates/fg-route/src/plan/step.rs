@@ -1045,6 +1045,7 @@ impl Simulator<'_> {
         }
         s.spent.missing_class_quests = missing as u32;
         s.spent.missing_profession_quests = self.missing_profession_quests(s) as u32;
+        s.spent.missing_exclusive_quests = self.missing_exclusive_quests(s) as u32;
         s.spent.missing_zone_quests = zone as u32;
         let dungeons = (0..self.model.dungeons.len())
             .filter(|&d| {
@@ -1064,6 +1065,7 @@ impl Simulator<'_> {
             + (missing + zone + dungeons + self.reputation_goals_unmet(s)) as f64 * self.params.mandatory_penalty
             + s.spent.reputation_missing * self.params.reputation_weight
             + f64::from(s.spent.missing_profession_quests) * self.params.profession_quest_weight
+            + f64::from(s.spent.missing_exclusive_quests) * self.params.exclusive_quest_weight
     }
 
     /// A quest the route took and never turned in is grinding in all but name (kills for XP, no
@@ -1105,6 +1107,29 @@ impl Simulator<'_> {
                     // Counted once for its exclusive group: at its first member.
                     && !q.exclusive.iter().any(|id| {
                         model.index.get(id).is_some_and(|&j| j < *i && model.quests[j].skill.is_some())
+                    })
+            })
+            .count()
+    }
+
+    /// Quests only this edition has (`Quest::exclusive_content`) the route does not turn in, of
+    /// those the character can still use: not gray when the guide starts, not above its target
+    /// level, not mandatory (planned anyway). One per group of exclusive alternatives (the same
+    /// quest for each faction), none when one of them is done.
+    pub(crate) fn missing_exclusive_quests(&self, s: &State) -> usize {
+        let model = self.model;
+        let gray = xp::Rules::gray_level(self.profile.from_level);
+        (model.quests.iter().enumerate())
+            .filter(|(i, q)| {
+                q.exclusive_content
+                    && !q.mandatory
+                    && q.level > gray
+                    && q.min_level <= self.profile.to_level
+                    && !s.rewarded(*i)
+                    && !self.availability().alternative_done(s, q)
+                    // Counted once for its exclusive group: at its first member.
+                    && !q.exclusive.iter().any(|id| {
+                        model.index.get(id).is_some_and(|&j| j < *i && model.quests[j].exclusive_content)
                     })
             })
             .count()

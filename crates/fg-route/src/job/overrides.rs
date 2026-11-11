@@ -336,8 +336,8 @@ mod tests {
         assert!(forever.contains(&91723), "Delicate Instruments");
         assert!(!forever.contains(&783), "A Threat Within is in every edition");
         assert!(forever.is_sorted());
-        assert!(load(Edition::Classic).exclusive_quests.is_empty());
-        assert!(load(Edition::Tbc).exclusive_quests.is_empty());
+        assert_eq!(load(Edition::Classic).exclusive_quests, Vec::<i64>::new());
+        assert_eq!(load(Edition::Tbc).exclusive_quests, Vec::<i64>::new());
     }
 
     /// The files of every game version hold what they share (races, the tram, the zeppelins);

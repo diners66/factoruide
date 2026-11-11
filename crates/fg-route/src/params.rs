@@ -393,6 +393,11 @@ pub struct Params {
     /// the profession's trainer): their reward is the profession's, not XP, so they are planned
     /// whenever the route passes by, not at the cost of a long detour.
     pub profession_quest_weight: f64,
+    /// Seconds each quest only this edition has (WoW Forever's own, `Quest::exclusive_content`)
+    /// left out costs the optimizer: guides take them whenever they are not far off the way, and
+    /// the older quests fill the gaps (0: no preference). Only quests the character can still
+    /// use count: not gray at the guide's start, not above its target level.
+    pub exclusive_quest_weight: f64,
     /// How the first route is built.
     pub construction: Construction,
     /// Searches at once (different seeds), whatever the machine's processors: the same guide on
@@ -662,6 +667,7 @@ impl Default for Params {
             abandon_weight: 600.0,
             unlock_delay_weight: 300.0,
             profession_quest_weight: 300.0,
+            exclusive_quest_weight: 300.0,
             dungeon_xp_share: 0.35,
             dungeons: true,
             forced_dungeons: vec![],

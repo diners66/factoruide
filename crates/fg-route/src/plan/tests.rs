@@ -569,6 +569,78 @@ fn profession_quests_are_kept_once_gray() {
     assert_eq!(score(&p, &without).1.missing_profession_quests, 0);
 }
 
+/// Quests only WoW Forever has (`Quest::exclusive_content`) left out cost
+/// `exclusive_quest_weight` each: once for a group of exclusive alternatives, not when gray at
+/// the start or above the target level, nothing at weight 0.
+#[test]
+fn forever_quests_left_out_cost_the_score() {
+    let base = || {
+        let mut p = quests_at_start(3);
+        p.profile.to_level = 20;
+        p.model.quests[0].exclusive_content = true;
+        p.model.quests[1].exclusive_content = true;
+        p.params.exclusive_quest_weight = 300.0;
+        p
+    };
+    let all = [
+        Stop::quest(0, Kind::Accept),
+        Stop::quest(0, Kind::TurnIn),
+        Stop::quest(1, Kind::Accept),
+        Stop::quest(1, Kind::TurnIn),
+    ];
+    let without = [all[0], all[1]];
+    let score = |p: &Prepared, route: &[Stop]| planner(p).simulate_full(route, None).unwrap();
+    let p = base();
+    let ((done, spent), (left_out, spent_without)) = (score(&p, &all), score(&p, &without));
+    assert_eq!(spent.missing_exclusive_quests, 0);
+    assert_eq!(spent_without.missing_exclusive_quests, 1);
+    let mut off = base();
+    off.params.exclusive_quest_weight = 0.0;
+    let (done_off, left_off) = (score(&off, &all).0, score(&off, &without).0);
+    assert!(
+        ((left_out - done) - (left_off - done_off) - 300.0).abs() < 1e-6,
+        "{left_out} - {done} vs {left_off} - {done_off}"
+    );
+    assert_eq!(
+        score(&off, &without).1.missing_exclusive_quests,
+        1,
+        "counted, weighing nothing"
+    );
+
+    // Quest 2, an exclusive alternative of quest 1 (the other faction's): counted once.
+    let mut p = base();
+    let (one, two) = (p.model.quests[1].id, p.model.quests[2].id);
+    p.model.quests[2].exclusive_content = true;
+    p.model.quests[1].exclusive = vec![two];
+    p.model.quests[2].exclusive = vec![one];
+    assert_eq!(
+        score(&p, &without).1.missing_exclusive_quests,
+        1,
+        "once for both alternatives"
+    );
+
+    // Gray when the guide starts (level 1 at 20), or above the guide's target level: not counted.
+    let mut p = base();
+    p.profile.from_level = 20;
+    p.profile.to_level = 30;
+    // Nothing done (a gray quest leading nowhere is not even taken): neither counts.
+    assert_eq!(score(&p, &[]).1.missing_exclusive_quests, 0, "gray at the start");
+    let mut p = base();
+    p.model.quests[1].min_level = 25;
+    assert_eq!(
+        score(&p, &without).1.missing_exclusive_quests,
+        0,
+        "above the target level"
+    );
+}
+
+/// A request saved before `exclusive_quest_weight` gets its default.
+#[test]
+fn old_requests_keep_the_forever_weight() {
+    let params: crate::params::Params = serde_json::from_str("{}").unwrap();
+    assert!((params.exclusive_quest_weight - 300.0).abs() < 1e-9);
+}
+
 /// A road east of the start lined with mobs of level 1: three of quest 0's (its objective is
 /// done at the end of the road) and three others. Farming on the way is on, without a cap, and
 /// every mob met is killed (`farm_share` 1).

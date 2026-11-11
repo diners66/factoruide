@@ -569,6 +569,9 @@ pub struct Breakdown {
     /// Quests of the leveled professions left out (see `Params::profession_quest_weight`).
     #[serde(default)]
     pub missing_profession_quests: u32,
+    /// Quests only this edition has left out (see `Params::exclusive_quest_weight`).
+    #[serde(default)]
+    pub missing_exclusive_quests: u32,
     /// Reputation points the goals still miss at the end (see `Params::reputation_goals`).
     #[serde(default)]
     pub reputation_missing: f64,
