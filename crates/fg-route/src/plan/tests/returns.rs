@@ -140,3 +140,60 @@ fn the_score_counts_a_return_for_a_quest_in_the_log_at_the_first_visit() {
     assert!((with - without - 300.0).abs() < 1e-6, "{with} - {without}");
     assert_eq!(returns_of(&p, &route), 0, "off: not counted");
 }
+
+/// The state each stop of `route` starts from (`Planner::run`).
+fn states_of(p: &Prepared, route: &[Stop]) -> Vec<crate::plan::state::State> {
+    Planner::new(&p.model, &p.world, &p.params, &p.profile)
+        .run(route)
+        .expect("a valid route")
+        .states
+}
+
+/// What returns are counted from keeps only the quests still in the log: the 25 errands taken
+/// and turned in, and Ribs, are not carried along the rest of the route.
+#[test]
+fn only_the_quests_in_the_log_are_kept_for_returns() {
+    let p = town_boars_and_errands();
+    let route = route_back_to_the_boars(false);
+    let states = states_of(&p, &route);
+    let last = states.last().unwrap();
+    let kept: Vec<u32> = last.taken.iter().map(|&(q, _)| q).collect();
+    assert!(kept.len() <= 2, "Tusks and at most the last errand: {kept:?}");
+    assert!(kept.contains(&1), "Tusks, in the log: {kept:?}");
+}
+
+/// Two errands swapped before the trip back move the stop indexes the returns are counted
+/// with, not their order: the states after the swap count the same returns, so the
+/// incremental evaluation can stop there (`State::same_returns`). Tusks taken after Ribs'
+/// boars instead changes what is counted.
+#[test]
+fn reordered_stops_keep_the_same_returns() {
+    let mut p = town_boars_and_errands();
+    p.params.return_away = 300.0;
+    let route = route_back_to_the_boars(false);
+    // [Ribs, Tusks, Ribs' boars, Ribs in, (errand 0 taken, in), (errand 1 taken, in), ...]
+    let mut swapped = route.clone();
+    swapped[4..8].rotate_left(2);
+    let (a, b) = (states_of(&p, &route), states_of(&p, &swapped));
+    assert!(
+        a[8].same_returns(&b[8]),
+        "errands swapped: {:?} / {:?}",
+        a[8].taken,
+        b[8].taken
+    );
+    // The cost evaluated from the earlier run, stopped after the swap, is the full replay's.
+    let planner = Planner::new(&p.model, &p.world, &p.params, &p.profile);
+    let run = planner.run(&route).unwrap();
+    let incremental = planner.evaluate(&run, &swapped, 4, 7, true).unwrap();
+    let full = planner.simulate(&swapped, None).unwrap();
+    assert!((incremental - full).abs() < 1e-6, "{incremental} vs {full}");
+    let mut late = route;
+    late.swap(1, 2); // Tusks taken after Ribs' boars
+    let c = states_of(&p, &late);
+    assert!(
+        !a[3].same_returns(&c[3]),
+        "Tusks taken after the visit: {:?} / {:?}",
+        a[3].taken,
+        c[3].taken
+    );
+}

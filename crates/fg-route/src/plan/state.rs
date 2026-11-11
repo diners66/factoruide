@@ -459,6 +459,30 @@ impl State {
     }
 }
 
+impl State {
+    /// Whether the returns counted from here on are the same as from `other`
+    /// (`Simulator::count_return`): the same areas, and for each quest still in the log the
+    /// same areas visited since it was taken. The stop indexes themselves may differ (stops
+    /// reordered before): later stops come after all of them either way.
+    pub(crate) fn same_returns(&self, other: &State) -> bool {
+        fn areas(s: &State) -> impl Iterator<Item = (Pos, bool)> + '_ {
+            s.visits.iter().map(|v| (v.pos, v.left))
+        }
+        // Per quest of the log: the visits after it was taken (the visits are by index).
+        let live = |s: &State| {
+            let mut out: Vec<(u32, usize)> = (s.taken.iter())
+                .filter(|&&(q, _)| !s.turned[q as usize])
+                .map(|&(q, at)| (q, s.visits.iter().filter(|v| v.at > at).count()))
+                .collect();
+            out.sort_unstable();
+            out
+        };
+        self.visits.len() == other.visits.len()
+            && areas(self).eq(areas(other))
+            && (self.taken.is_empty() && other.taken.is_empty() || live(self) == live(other))
+    }
+}
+
 /// An area where the route did an objective (`State::visits`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Visit {

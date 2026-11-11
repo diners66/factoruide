@@ -299,9 +299,10 @@ impl Simulator<'_> {
         }
         s.accepted.set(i as usize, true);
         if self.params.return_weight > 0.0 {
-            // When each quest of the log was taken (`count_return`), those still in it.
-            let accepted = &s.accepted;
-            s.taken.retain(|&(t, _)| accepted[t as usize]);
+            // When each quest of the log was taken (`count_return`), those still in it (not
+            // given up, not turned in).
+            let (accepted, turned) = (&s.accepted, &s.turned);
+            s.taken.retain(|&(t, _)| accepted[t as usize] && !turned[t as usize]);
             s.taken.push((i, s.at));
         }
         s.abilities |= self.model.abilities.accepted(q.id);
