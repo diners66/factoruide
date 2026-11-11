@@ -211,3 +211,16 @@ log reports as having no reachable quest giver. That is data to complete (the zo
 the 615 Forever quests with no data at all), not weighting.
 
 The 300 guide is in the game's Factoruide_Data (the earlier Data.lua kept beside the run).
+
+### After the review fix (the search's window estimate now exact for Forever quests)
+
+| Weight | Forever quests turned in (10s / 20s / 30s / 40s) | Usable ones left out | Time | Returns |
+|---|---|---|---|---|
+| 0 | 37 of 625 (6 / 12 / 18 / 1) | 35 | 92h06 | 16 |
+| 300 | 42 of 616 (6 / 14 / 21 / 1) | 30 | 92h41 | 21 |
+| 600 | 42 of 614 (6 / 14 / 21 / 1) | 30 | 92h42 | 22 |
+
+300 and 600 take the same quests: the 30 left are worth more than 10 minutes each to reach, or
+never takeable in this guide (the level window gives up a quest whose mobs fell too low, which the
+count does not know). The default stays 300. The guide installed in the game (91h03, 41 Forever
+quests, before the fix) stays: as many Forever quests, 1h40 faster than this run's 300 guide.
