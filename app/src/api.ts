@@ -149,6 +149,8 @@ export interface Params {
   abandon_weight: number;
   unlock_delay_weight: number;
   profession_quest_weight: number;
+  /** Seconds each quest only WoW Forever has costs the optimizer when left out (0 = no preference). */
+  exclusive_quest_weight: number;
   zone_stay: number;
   forced_dungeons: number[];
   /** Dungeons run with every quest of theirs the character can take. */
