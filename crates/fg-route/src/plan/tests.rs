@@ -632,6 +632,56 @@ fn forever_quests_left_out_cost_the_score() {
         0,
         "above the target level"
     );
+
+    // A crafting quest of a profession the guide does not take far enough: never takeable.
+    let mut p = base();
+    let mut skinning = crate::model::ProfessionPlan::new(&crate::profession::ProfessionGoal {
+        key: "skinning".into(),
+        target: 300,
+        start_level: None,
+        milestones: vec![],
+    })
+    .unwrap();
+    skinning.curve = vec![1; 61];
+    p.model.professions = vec![skinning];
+    p.model.quests[1].skill = Some((0, 150));
+    assert_eq!(
+        score(&p, &without).1.missing_exclusive_quests,
+        0,
+        "its skill out of reach"
+    );
+}
+
+/// A move that adds (or drops) the turn-in of a Forever quest is evaluated exactly, not on the
+/// estimate of a window: the estimate does not see what leaving it out costs
+/// (`exclusive_quest_weight`), and the search would turn the move down on it.
+#[test]
+fn adding_a_forever_quest_is_evaluated_exactly() {
+    let mut p = quests_at_start(3);
+    p.profile.to_level = 20;
+    p.model.quests[1].exclusive_content = true;
+    p.params.exclusive_quest_weight = 300.0;
+    let without = [Stop::quest(0, Kind::Accept), Stop::quest(0, Kind::TurnIn)];
+    let with = [
+        without[0],
+        without[1],
+        Stop::quest(1, Kind::Accept),
+        Stop::quest(1, Kind::TurnIn),
+    ];
+    let planner = planner(&p);
+    let run = planner.run(&without).unwrap();
+    let (cost, exact) = planner.evaluate_within(&run, &with, 2, 3, false, Some(2)).unwrap();
+    let full = planner.simulate(&with, None).unwrap();
+    assert!(exact, "the window is not used");
+    assert!((cost - full).abs() < 1e-6, "{cost} vs {full}");
+    // Without the weight, the window stays (nothing at the end counts the quest).
+    p.params.exclusive_quest_weight = 0.0;
+    let planner = crate::plan::tests::planner(&p);
+    let run = planner.run(&without).unwrap();
+    assert!(
+        !planner.evaluate_within(&run, &with, 2, 3, false, Some(2)).unwrap().1,
+        "estimated"
+    );
 }
 
 /// A request saved before `exclusive_quest_weight` gets its default.

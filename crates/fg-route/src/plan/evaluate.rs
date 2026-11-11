@@ -262,9 +262,13 @@ impl Planner<'_> {
         let planned = self.planned(candidate);
         // The quests of the character's log given up at the start changed: from the start.
         let old = &run.states[0].planned;
+        // Exact when a quest the end of the route counts changes: a mandatory one, or one only
+        // this edition has (`exclusive_quest_weight`): the estimate does not see its absence.
+        let counted =
+            |q: &crate::model::Quest| q.mandatory || q.exclusive_content && self.params.exclusive_quest_weight > 0.0;
         let window = window.filter(|_| {
             (self.model.quests.iter().enumerate())
-                .all(|(i, q)| !q.mandatory || (old.flags[i] ^ planned.flags[i]) & 2 == 0)
+                .all(|(i, q)| !counted(q) || (old.flags[i] ^ planned.flags[i]) & 2 == 0)
         });
         let restart =
             (self.model.initial.accepted.iter()).any(|&i| Planned::left(old, i) != Planned::left(&planned, i));

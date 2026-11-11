@@ -133,7 +133,7 @@ pub fn run(conn: &Connection, opts: &RouteOptions) -> Result<()> {
         b.quest_xp, b.mob_xp, b.grind_xp, b.farm_xp, b.explore_xp
     );
     eprintln!(
-        "  training {} | hearthstones {} | class quests missing {} | zone quests missing {} | profession quests missing {}          | Forever quests missing {}",
+        "  training {} | hearthstones {} | class quests missing {} | zone quests missing {} | profession quests missing {} | Forever quests missing {}",
         m(b.training),
         b.hearths,
         b.missing_class_quests,

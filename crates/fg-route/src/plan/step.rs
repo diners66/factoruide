@@ -1125,6 +1125,9 @@ impl Simulator<'_> {
                     && !q.mandatory
                     && q.level > gray
                     && q.min_level <= self.profile.to_level
+                    // A crafting quest only when the profession's curve reaches its skill.
+                    && q.skill
+                        .is_none_or(|(p, value)| model.professions[p].skill_at(self.profile.to_level) >= value)
                     && !s.rewarded(*i)
                     && !self.availability().alternative_done(s, q)
                     // Counted once for its exclusive group: at its first member.

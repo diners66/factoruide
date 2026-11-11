@@ -2,13 +2,18 @@
 // guide (routes/<name>.json, as `fg route` writes it) turns in, by the character's level band.
 //   node scripts/check-exclusive.mjs <guide.json> [<guide.json>...]
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Paths from the repository, wherever the script is run from.
+const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const files = process.argv.slice(2);
 if (!files.length) {
   console.error("usage: node scripts/check-exclusive.mjs <guide.json> [<guide.json>...]");
   process.exit(2);
 }
-const toml = fs.readFileSync("overrides/forever/exclusive_quests.toml", "utf8");
+const toml = fs.readFileSync(path.join(repo, "overrides/forever/exclusive_quests.toml"), "utf8");
 const exclusive = new Set([...toml.replace(/#.*$/gm, "").matchAll(/\d+/g)].map((m) => Number(m[0])));
 const bands = ["0-9", "10s", "20s", "30s", "40s", "50s", "60"];
 

@@ -5,10 +5,15 @@
 // Needs data/forever.sqlite, data/classic.sqlite and data/tbc.sqlite: any `fg --edition <e>`
 // command unpacks them (fg --edition classic travel "Elwynn Forest,40,60" "Elwynn Forest,42,62").
 import fs from "node:fs";
+import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
+
+// Paths from the repository, wherever the script is run from.
+const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const open = (edition) => {
-  const file = `data/${edition}.sqlite`;
+  const file = path.join(repo, "data", `${edition}.sqlite`);
   if (!fs.existsSync(file)) {
     console.error(`${file} missing: run any fg command with --edition ${edition} first`);
     process.exit(2);
@@ -38,5 +43,5 @@ quests = [
 ${lines.join("\n")}
 ]
 `;
-fs.writeFileSync("overrides/forever/exclusive_quests.toml", text);
+fs.writeFileSync(path.join(repo, "overrides/forever/exclusive_quests.toml"), text);
 console.log(`${exclusive.length} quests only WoW Forever has: overrides/forever/exclusive_quests.toml`);
