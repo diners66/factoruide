@@ -57,8 +57,14 @@ Checked in game (2026-11-10): `C_QuestLog.RequestLoadQuestByID` answers
   gone more than `return_away` (500 yards) since, its quest taken before that visit
   (`State::taken`: the stop that really took it, at hand included; the starting log counts as
   taken before). Each costs the optimizer `return_weight` (300 s; 0 = off, nothing tracked).
-- The count agrees with `scripts/check-returns.mjs` (20 vs 17 on one guide); the script also
-  counts returns that cannot be avoided (a level grind between, a chain's next quest).
+- The count is a proxy close to `scripts/check-returns.mjs` (20 vs 17 on one guide), not the
+  same measure: the script uses 250 yards (200 here), looks back without limit (40 areas here),
+  leaves out the starting log and returns whose mobs were above the character at the first visit,
+  and measures "away" from the current objective. Both count objective steps, not the trips a
+  player feels (2 by hand on the same guide in game): read "7 fewer returns" as a trend.
+- A return is counted only for a quest taken before the earlier visit: the search may avoid one
+  by taking the quest after that visit instead, which the player still walks back for. Kept as
+  the plan defines it (review, 2026-11-11); worth revisiting if guides show it.
 - Zev 18-60, same save, script count (sim count):
 
   | Seed | Off | On (300 s) |
@@ -68,6 +74,16 @@ Checked in game (2026-11-10): `C_QuestLog.RequestLoadQuestByID` answers
   | 2 | 95h41, 34 | 98h08, 19 (18) |
 
   About 7 fewer returns for about an hour on average; the seeds alone differ by 3 hours.
+
+### Review fixes (2026-11-11)
+
+- Addon: "not offered" judged only when nothing on the way may unlock it (a turn-in or an accept
+  elsewhere still to do, prerequisites `pre`/`pa` not done, `min` above, a gray quest `ql`), the
+  list window not forgotten on close; missing quests asked again at each check, "not offered"
+  marks dropped when offered or at a level up; marks in the FGP1: export for the web app.
+- Planner: in a group, "not offered" leaves a quest out only when to every player.
+- Search: `State::taken` keeps only the quests in the log; the incremental evaluation compares
+  returns by order (`State::same_returns`), not by stop index.
 
 ## Checks
 

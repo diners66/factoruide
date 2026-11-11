@@ -298,8 +298,10 @@ pub struct Params {
     pub tidy_radius: f64,
     /// The same for a quest's objective near where the route stood long before (up to
     /// `RETURN_BACK` stops back), its quest already in the log then: done at that first visit,
-    /// within `return_radius` yards, when that costs at most `return_slack` seconds. The player
-    /// would rather not come back to an area for what could have been done there (negative: off).
+    /// within `return_radius` yards, when that costs at most `return_slack` seconds of the
+    /// optimizer's score. The player would rather not come back to an area for what could have
+    /// been done there (negative: off). The score counts the return removed (`return_weight`)
+    /// too, so with it on a move may take up to `return_slack + return_weight` seconds of play.
     pub return_slack: f64,
     pub return_radius: f64,
     /// Seconds each return to an area costs the optimizer (0 = off): an objective done within

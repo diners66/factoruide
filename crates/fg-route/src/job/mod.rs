@@ -346,13 +346,16 @@ pub fn prepare(conn: &Connection, overrides: &Overrides, req: &PlanRequest, prog
     })
 }
 
-/// Quests the game does not give the character or a member of its group (the guide addon's
-/// findings, in their profiles), once each.
+/// Quests the game does not give the character or its group (the guide addon's findings, in
+/// their profiles), once each: one the server does not know (`missing`) for any player; one
+/// not offered (a player's progress) only when to every player, else the others do it and the
+/// addon of the one without passes it.
 fn unavailable_quests(req: &PlanRequest) -> Vec<Unavailable> {
+    let players: Vec<&StartState> = req.start.iter().chain(&req.mates).collect();
+    let everyone = |id: i64| (players.iter()).all(|p| p.unavailable.iter().any(|u| u.id == id));
     let mut out: Vec<Unavailable> = Vec::new();
-    let starts = req.start.iter().chain(&req.mates);
-    for u in starts.flat_map(|s| s.unavailable.iter()) {
-        if !out.iter().any(|o| o.id == u.id) {
+    for u in players.iter().flat_map(|s| s.unavailable.iter()) {
+        if !out.iter().any(|o| o.id == u.id) && (u.why == "missing" || everyone(u.id)) {
             out.push(u.clone());
         }
     }
@@ -578,4 +581,46 @@ fn world_for(
         progress(&JobEvent::Status(warning));
     }
     Ok(world)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn group(start: &serde_json::Value, mate: &serde_json::Value) -> PlanRequest {
+        serde_json::from_value(serde_json::json!({
+            "race": "orc", "class": "warrior", "from_level": 20, "to_level": 30,
+            "start": start, "mates": [mate],
+        }))
+        .unwrap()
+    }
+
+    /// In a group, a quest the server does not know is out for everyone; one a giver did not
+    /// offer one player (their progress) only when it was offered to none: the others do it,
+    /// and that player's addon passes it.
+    #[test]
+    fn a_quest_not_offered_to_one_player_stays_for_the_group() {
+        let ids = |req: &PlanRequest| {
+            let mut ids: Vec<i64> = unavailable_quests(req).iter().map(|u| u.id).collect();
+            ids.sort_unstable();
+            ids
+        };
+        let not_offered = |id: i64| serde_json::json!({ "id": id, "why": "not offered" });
+        let missing = |id: i64| serde_json::json!({ "id": id, "why": "missing" });
+        let req = group(
+            &serde_json::json!({ "level": 20, "unavailable": [not_offered(1), missing(2), not_offered(3)] }),
+            &serde_json::json!({ "level": 20, "unavailable": [not_offered(3), not_offered(4)] }),
+        );
+        assert_eq!(
+            ids(&req),
+            [2, 3],
+            "missing for one: out; not offered: only when to both"
+        );
+        let solo: PlanRequest = serde_json::from_value(serde_json::json!({
+            "race": "orc", "class": "warrior", "from_level": 20, "to_level": 30,
+            "start": { "level": 20, "unavailable": [not_offered(1)] },
+        }))
+        .unwrap();
+        assert_eq!(ids(&solo), [1], "alone: not offered is out");
+    }
 }

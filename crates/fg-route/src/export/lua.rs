@@ -196,6 +196,9 @@ pub fn to_lua(routes: &[Route]) -> String {
             if let Some(l) = s.min_level {
                 fields.push(format!("min = {l}"));
             }
+            if let Some(l) = s.quest_level {
+                fields.push(format!("ql = {l}"));
+            }
             if let Some(o) = s.objective {
                 fields.push(format!("o = {}", o + 1));
             }

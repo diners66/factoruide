@@ -291,6 +291,7 @@ impl StepWriter<'_> {
             pre_any: Vec::new(),
             pre_need: None,
             min_level: None,
+            quest_level: None,
             bg: false,
             try_buy: false,
             buy: false,
@@ -875,6 +876,7 @@ impl StepWriter<'_> {
                 step.pre_any.clone_from(&q.pre_any);
                 step.pre_need = (q.pre_need > 1).then_some(q.pre_need);
                 step.min_level = Some(q.min_level);
+                step.quest_level = Some(q.level);
                 // An item dropped by a mob: named, targeted by the addon's macro, and its other
                 // places.
                 let say = match &q.start_mob {

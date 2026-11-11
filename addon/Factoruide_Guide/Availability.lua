@@ -144,11 +144,45 @@ end
 -- Steps ahead of the current one looked at for this giver's quests.
 local AHEAD = 20
 
+--- Whether a quest of level `questLevel` is gray for the character (the planner's
+--- `xp::Rules::gray_level`): its giver may not list it (low-level quests not tracked).
+local function Gray(questLevel)
+    if not questLevel then return false end
+    local level = UnitLevel("player")
+    local gray
+    if level <= 5 then
+        gray = 0
+    elseif level <= 39 then
+        gray = level - 5 - math.floor(level / 10)
+    elseif level <= 59 then
+        gray = level - 1 - math.floor(level / 5)
+    else
+        gray = level - 9
+    end
+    return questLevel <= gray
+end
+
+--- Whether the quests an accept step needs done are (`pre`: all of them, `pa`: `pn` of them,
+--- one when not said).
+local function PrerequisitesDone(step)
+    for _, q in ipairs(step.pre or {}) do
+        if not QuestLog.IsQuestFlaggedCompleted(q) then return false end
+    end
+    if step.pa and #step.pa > 0 then
+        local done = 0
+        for _, q in ipairs(step.pa) do
+            if QuestLog.IsQuestFlaggedCompleted(q) then done = done + 1 end
+        end
+        if done < (step.pn or 1) then return false end
+    end
+    return true
+end
+
 --- Accept steps at this giver, from the current step on (a few ahead), whose quest is neither
 --- offered nor in the log nor done. Those after a quest to turn in there first are not judged
 --- (the turn-in may unlock them), nor those after a turn-in or an accept at another NPC still
 --- to do, nor any when the window lists a quest to turn in, nor those above the character's
---- level.
+--- level, gray for it, or whose prerequisites are not done.
 local function NotOffered(entityType, entityID, offered, turnins)
     local route = FG.Guide:Route()
     if not route or turnins then return {} end
@@ -182,7 +216,9 @@ local function NotOffered(entityType, entityID, offered, turnins)
             and not offered[step.q]
             and not QuestLog.IsOnQuest(step.q)
             and not QuestLog.IsQuestFlaggedCompleted(step.q)
-            and UnitLevel("player") >= (step.lvl or 0)
+            and UnitLevel("player") >= math.max(step.lvl or 0, step.min or 0)
+            and not Gray(step.ql)
+            and PrerequisitesDone(step)
         then
             table.insert(out, step.q)
         end

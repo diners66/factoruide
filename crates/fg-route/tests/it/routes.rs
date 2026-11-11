@@ -4622,3 +4622,27 @@ fn a_dungeon_is_run_from_the_minimum_level_of_its_must_have_quest() {
     p.model.quests[i].implicit_window = false;
     assert!(dungeon_level(&p) >= 18, "asked at level 18: run from it");
 }
+
+/// The addon gets the level of each quest it takes (`ql`): a quest gray for the character may be
+/// left out of its giver's list (low-level quests not tracked), so it is not judged "not
+/// offered" then (Availability.lua).
+#[test]
+fn addon_knows_the_level_of_each_quest_taken() {
+    let p = generic();
+    let planner = planner(p);
+    let route = planner.construct(|_| {});
+    let guide = fg_route::export::build(&planner, &p.profile, &route);
+    let lua = fg_route::export::to_lua(std::slice::from_ref(&guide));
+    let accepts: Vec<_> = (guide.steps.iter())
+        .filter(|s| s.kind == fg_route::export::StepKind::Accept)
+        .collect();
+    assert!(!accepts.is_empty(), "no quest taken");
+    for step in accepts {
+        let level = step.quest_level.expect("an accept has its quest's level");
+        let line = lua
+            .lines()
+            .find(|l| l.contains(&format!("t = {:?}", step.text)))
+            .unwrap();
+        assert!(line.contains(&format!(", ql = {level}")), "{line}");
+    }
+}

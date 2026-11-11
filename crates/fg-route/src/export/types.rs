@@ -142,6 +142,9 @@ pub struct Step {
     pub pre_need: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_level: Option<i64>,
+    /// Accept steps: the quest's level (gray for the character below `xp::Rules::gray_level`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_level: Option<i64>,
     /// Objective done along the way while doing other quests (does not block the guide).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub bg: bool,
@@ -304,6 +307,7 @@ impl Step {
             pre_any: Vec::new(),
             pre_need: None,
             min_level: None,
+            quest_level: None,
             bg: false,
             try_buy: false,
             buy: false,

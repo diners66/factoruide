@@ -950,7 +950,40 @@ do
     assert(char.unavailable[6106] and char.unavailable[6106].why == "missing", "level up: missing stays")
     playerLevel = 21
 
-    char.unavailable[6105], char.unavailable[6106] = nil, nil
+    -- 6. Not judged either: a quest gray for the character (the giver may list only quests worth
+    -- XP), one whose prerequisite is not done, one above the character's level. A quest without
+    -- any of these still is.
+    FG.Routes["avail-gray"] = {
+        race = 7,
+        class = 8,
+        faction = "Alliance",
+        fromLevel = 21,
+        toLevel = 60,
+        time = 1,
+        steps = {
+            { k = "accept", t = "Accept Listed from Giver", q = 6201, e = "npc", id = 910, n = "Giver", lvl = 21 },
+            { k = "accept", t = "Accept Gray", q = 6202, e = "npc", id = 910, n = "Giver", lvl = 21, ql = 14 },
+            { k = "accept", t = "Accept Needs One", q = 6203, e = "npc", id = 910, lvl = 21, pre = { 6299 } },
+            { k = "accept", t = "Accept Too High", q = 6204, e = "npc", id = 910, lvl = 21, min = 23 },
+            { k = "accept", t = "Accept Plain", q = 6205, e = "npc", id = 910, n = "Giver", lvl = 21, ql = 15 },
+            { k = "grind", t = "Grind", lvl = 60 },
+        },
+    }
+    requested = {}
+    useRoute("avail-gray")
+    runTimers()
+    for _, q in ipairs(requested) do
+        fire("QUEST_DATA_LOAD_RESULT", q, true)
+    end
+    offered = { { questID = 6201, questLevel = 21 } }
+
+    fire("GOSSIP_SHOW")
+    assert(not char.unavailable[6202], "gray: not judged")
+    assert(not char.unavailable[6203], "a prerequisite not done: not judged")
+    assert(not char.unavailable[6204], "above the character's level: not judged")
+    assert(char.unavailable[6205] and char.unavailable[6205].why == "not offered", "a quest worth XP is")
+
+    char.unavailable[6105], char.unavailable[6106], char.unavailable[6205] = nil, nil, nil
     onQuest[6100] = nil
     UnitGUID, C_GossipInfo.GetAvailableQuests, C_GossipInfo.GetActiveQuests = savedGUID, savedAvailable, savedActive
     UnitName = function() return "Brouz" end

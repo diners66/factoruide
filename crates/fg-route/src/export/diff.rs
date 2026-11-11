@@ -810,6 +810,7 @@ mod tests {
             pre_any: Vec::new(),
             pre_need: None,
             min_level: None,
+            quest_level: None,
             bg: false,
             try_buy: false,
             buy: false,
