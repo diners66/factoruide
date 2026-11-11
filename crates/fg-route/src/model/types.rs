@@ -22,6 +22,8 @@ pub struct Profile {
     /// `required_class_quests` are `selected`.
     pub class_requirements: Vec<ClassRequirement>,
     pub quest_overrides: Vec<QuestOverride>,
+    /// Quests only this edition has (`Overrides::exclusive_quests`): `Quest::exclusive_content`.
+    pub exclusive_quests: Vec<i64>,
     /// Exact quests selected by the player.
     pub required_quests: Vec<QuestRequirement>,
     /// Confirmed completions from the starting profile, never inferred from character level.
@@ -575,6 +577,9 @@ pub struct Quest {
     /// Required because its zone is forced (`Params::forced_zones`), or as a prerequisite of
     /// such a quest: `mandatory` too, reported apart from the class quests.
     pub zone_forced: bool,
+    /// A quest only this edition has (WoW Forever's own, `Profile::exclusive_quests`): guides
+    /// take it first (`Params::exclusive_quest_weight`).
+    pub exclusive_content: bool,
     /// Explicit player requirement or a prerequisite selected to reach one.
     pub required: bool,
     pub completion_window: CompletionWindow,

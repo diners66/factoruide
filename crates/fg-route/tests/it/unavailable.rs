@@ -85,3 +85,28 @@ fn a_profile_without_unavailable_quests_reads_as_before() {
     assert_eq!(start.unavailable[0].id, 9267);
     assert_eq!(start.unavailable[0].npc, None);
 }
+
+/// The quests only WoW Forever has (`Overrides::exclusive_quests`) are marked in the model, and
+/// no other.
+#[test]
+fn forever_quests_are_marked_in_the_model() {
+    let conn = Fixture::new(Edition::Forever).file("forever_druid").open();
+    let mut overrides = Overrides::load_edition(&repo().join("overrides"), Edition::Forever).unwrap();
+    let mut req = request();
+    req.start = Some(StartState {
+        level: 40,
+        ..StartState::default()
+    });
+    req.required_class_quests = None;
+    overrides.exclusive_quests = Vec::new();
+    let before = job::prepare(&conn, &overrides, &req, &|_| {}).unwrap();
+    assert!(before.model.quests.iter().all(|q| !q.exclusive_content), "none listed");
+    let mut ids: Vec<i64> = before.model.quests.iter().map(|q| q.id).collect();
+    ids.sort_unstable();
+    let marked = vec![ids[0], ids[1]];
+    overrides.exclusive_quests.clone_from(&marked);
+    let after = job::prepare(&conn, &overrides, &req, &|_| {}).unwrap();
+    for q in &after.model.quests {
+        assert_eq!(q.exclusive_content, marked.contains(&q.id), "{} ({})", q.name, q.id);
+    }
+}

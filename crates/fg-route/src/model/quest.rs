@@ -74,6 +74,7 @@ impl QuestBuilder<'_> {
                         .any(|c| c.selected && c.quests.contains(&r.id))
                         || self.params.all_class_quests && r.min_level.unwrap_or(1) <= self.profile.to_level),
             zone_forced,
+            exclusive_content: self.profile.exclusive_quests.binary_search(&r.id).is_ok(),
             required: false,
             completion_window: CompletionWindow::default(),
             implicit_window: false,
