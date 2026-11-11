@@ -338,6 +338,8 @@ impl Planner<'_> {
                     && s.forced_left == old.forced_left
                     && Self::same_timers(&s, old)
                     && s.together == old.together
+                    && s.visits == old.visits
+                    && s.taken == old.taken
                 {
                     let extra = self.sim().weights(&s.spent) - self.sim().weights(&old.spent);
                     return Some((run.total + s.time - old.time + extra, true));

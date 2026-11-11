@@ -105,3 +105,34 @@ fn an_objective_of_a_quest_in_the_starting_log_is_done_at_the_first_visit() {
     let (ribs, tusks) = (Stop::quest(0, Kind::Objective(0)), Stop::quest(1, Kind::Objective(0)));
     assert_eq!(at(tusks), at(ribs) + 1, "{after:?}");
 }
+
+/// Returns counted by the score (`Params::return_weight`), so that the search weighs them.
+fn returns_of(p: &Prepared, route: &[Stop]) -> u32 {
+    Planner::new(&p.model, &p.world, &p.params, &p.profile)
+        .simulate_full(route, None)
+        .expect("a valid route")
+        .1
+        .returns
+}
+
+/// The trip back to the boars for Tusks, in the log at Ribs' visit, is a return; not once
+/// Tusks' boars are done at that visit, nor when Tusks is taken after it.
+#[test]
+fn the_score_counts_a_return_for_a_quest_in_the_log_at_the_first_visit() {
+    let mut p = town_boars_and_errands();
+    // The errands' town is 500 yards from Ribs' boars.
+    p.params.return_away = 300.0;
+    let route = route_back_to_the_boars(false);
+    assert_eq!(returns_of(&p, &route), 1);
+    p.params.return_slack = 300.0;
+    assert_eq!(returns_of(&p, &tidied(&p, &route)), 0, "done at the first visit");
+    assert_eq!(returns_of(&p, &route_back_to_the_boars(true)), 0, "Tusks taken after it");
+    // A return costs the optimizer `return_weight` on top of the trip.
+    let planner = Planner::new(&p.model, &p.world, &p.params, &p.profile);
+    let with = planner.simulate(&route, None).unwrap();
+    p.params.return_weight = 0.0;
+    let planner = Planner::new(&p.model, &p.world, &p.params, &p.profile);
+    let without = planner.simulate(&route, None).unwrap();
+    assert!((with - without - 300.0).abs() < 1e-6, "{with} - {without}");
+    assert_eq!(returns_of(&p, &route), 0, "off: not counted");
+}

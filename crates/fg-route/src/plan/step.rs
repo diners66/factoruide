@@ -298,6 +298,12 @@ impl Simulator<'_> {
             self.growth().gather(s, q.starts[0].zone, q.start_kills);
         }
         s.accepted.set(i as usize, true);
+        if self.params.return_weight > 0.0 {
+            // When each quest of the log was taken (`count_return`), those still in it.
+            let accepted = &s.accepted;
+            s.taken.retain(|&(t, _)| accepted[t as usize]);
+            s.taken.push((i, s.at));
+        }
         s.abilities |= self.model.abilities.accepted(q.id);
         s.log += 1;
         s.held += u16::from(q.carried);
@@ -378,7 +384,9 @@ impl Simulator<'_> {
         let mut record = recorder(&mut trace);
         self.abandon_hopeless(s, &mut record);
         let before = s.time;
+        let objective = matches!(stop.kind, Kind::Objective(_)) && !Self::already_done(s, stop);
         self.do_apply(s, stop, &mut record);
+        self.count_return(s, stop, objective);
         self.keep_lowest(s);
         self.count_desync(s, s.time - before);
         self.catch_up(s, &mut record);
@@ -388,6 +396,38 @@ impl Simulator<'_> {
             s.spent.outside_preferred += s.time - before;
         }
         self.abandon_hopeless(s, &mut record);
+    }
+
+    /// Returns to an area (`Params::return_weight`): the areas left behind marked, and an
+    /// objective done (`objective`) where one was before, its quest already in the log then, the
+    /// route gone away since, counted. Its area is then the latest visit (`State::visits`).
+    fn count_return(&self, s: &mut State, stop: Stop, objective: bool) {
+        /// Areas remembered: older ones are too far back in the route to matter.
+        const VISITS: usize = 40;
+        let (radius, away) = (self.params.return_radius, self.params.return_away);
+        if self.params.return_weight <= 0.0 {
+            return;
+        }
+        for v in &mut s.visits {
+            v.left |= v.pos.dist(&s.pos) > away;
+        }
+        if !objective {
+            return;
+        }
+        // Taken during the route (at its stop or at hand before), or in the starting log.
+        let accepted = s.taken.iter().find(|&&(t, _)| t == stop.index).map(|&(_, at)| at);
+        let back = |v: &super::state::Visit| {
+            v.left && v.pos.dist(&s.pos) <= radius && accepted.is_none_or(|at| v.at > at)
+        };
+        if s.visits.iter().any(back) {
+            s.spent.returns += 1;
+        }
+        let pos = s.pos;
+        s.visits.retain(|v| v.pos.dist(&pos) > radius);
+        if s.visits.len() >= VISITS {
+            s.visits.remove(0);
+        }
+        s.visits.push(super::state::Visit { pos, at: s.at, left: false });
     }
 
     fn do_apply(&self, s: &mut State, stop: Stop, record: &mut impl FnMut(&State, Event)) {

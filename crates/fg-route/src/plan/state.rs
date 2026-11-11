@@ -358,6 +358,12 @@ pub(crate) struct State {
     pub(crate) started: Vec<(u32, u8, f64)>,
     /// The objective stops done one after the other at the same place (see `Together`).
     pub(crate) together: Together,
+    /// Areas where the route did objectives, the latest last (`Params::return_weight`; empty
+    /// when off).
+    pub(crate) visits: Vec<Visit>,
+    /// Quests of the log taken during the route, with the index of the stop that took them
+    /// (`Params::return_weight`; empty when off).
+    pub(crate) taken: Vec<(u32, u32)>,
     /// The place of the route's next stop, when the route is known (a replay): an objective
     /// with several places is done at the one on the way to it (`Planner::spot`). Set before
     /// each stop, not part of what the state carries on.
@@ -453,6 +459,16 @@ impl State {
     }
 }
 
+/// An area where the route did an objective (`State::visits`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Visit {
+    pub(crate) pos: Pos,
+    /// Index in the route of the stop that last did one there.
+    pub(crate) at: u32,
+    /// The route went further than `Params::return_away` from it since.
+    pub(crate) left: bool,
+}
+
 /// Where the time goes.
 #[derive(Debug, Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
 pub struct Breakdown {
@@ -513,6 +529,10 @@ pub struct Breakdown {
     /// Times the character went into another zone.
     #[serde(default)]
     pub zone_changes: u32,
+    /// Returns to an area for a quest already in the log at the visit before (see
+    /// `Params::return_weight`).
+    #[serde(default)]
+    pub returns: u32,
     /// Time spent outside the preferred zones (none preferred: 0).
     #[serde(default)]
     pub outside_preferred: f64,

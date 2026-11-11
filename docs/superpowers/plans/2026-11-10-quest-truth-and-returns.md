@@ -50,6 +50,25 @@ Checked in game (2026-11-10): `C_QuestLog.RequestLoadQuestByID` answers
   taken or in the starting log, and moved there for at most `return_slack` (300 seconds).
   Tests: `plan/tests/returns.rs`. Before/after on the same save: `--param return_slack=-1`.
 
+### In the search (2026-11-11)
+
+- The simulation counts returns (`Breakdown::returns`, printed by `fg route`): an objective within
+  `return_radius` of an area where one was done (`State::visits`, the last 40 areas), the route
+  gone more than `return_away` (500 yards) since, its quest taken before that visit
+  (`State::taken`: the stop that really took it, at hand included; the starting log counts as
+  taken before). Each costs the optimizer `return_weight` (300 s; 0 = off, nothing tracked).
+- The count agrees with `scripts/check-returns.mjs` (20 vs 17 on one guide); the script also
+  counts returns that cannot be avoided (a level grind between, a chain's next quest).
+- Zev 18-60, same save, script count (sim count):
+
+  | Seed | Off | On (300 s) |
+  |---|---|---|
+  | 42 | 92h45, 25 | 92h53, 20 (15) |
+  | 1 | 95h50, 25 | 96h10, 23 (16) |
+  | 2 | 95h41, 34 | 98h08, 19 (18) |
+
+  About 7 fewer returns for about an hour on average; the seeds alone differ by 3 hours.
+
 ## Checks
 
 - `luajit addon/tests/smoke.lua` with stubbed `C_QuestLog.RequestLoadQuestByID` and gossip.

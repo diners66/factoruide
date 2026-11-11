@@ -158,6 +158,8 @@ impl<'s> Simulator<'s> {
             timers: Vec::new(),
             started: Vec::new(),
             together: state::Together::default(),
+            visits: Vec::new(),
+            taken: Vec::new(),
             next: None,
             spot: None,
             landed: Landed::No,
@@ -327,6 +329,7 @@ impl<'s> Simulator<'s> {
             + spent.flight_gold
             + spent.bag_overflow
             + self.params.zone_change_weight * f64::from(spent.zone_changes)
+            + self.params.return_weight * f64::from(spent.returns)
             + self.params.preferred_zone_weight * spent.outside_preferred
             + self.params.abandon_weight * f64::from(spent.abandoned)
             + self.params.unlock_delay_weight * spent.unlock_delay

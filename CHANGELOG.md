@@ -18,6 +18,7 @@ An addon change also goes, in the same words, under Unreleased in that addon's o
 
 - A forced dungeon is run even when it has no quest for your character (Shadowfang Keep for the Alliance).
 - Loot is no longer sold to warlock-only demon trainers in a guide for another class.
+- Fewer trips back to an area for a quest that was already in your log the first time there.
 - The quests inside a dungeon are finished before leaving for another forced dungeon.
 
 ### Addon

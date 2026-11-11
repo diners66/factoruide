@@ -302,6 +302,12 @@ pub struct Params {
     /// would rather not come back to an area for what could have been done there (negative: off).
     pub return_slack: f64,
     pub return_radius: f64,
+    /// Seconds each return to an area costs the optimizer (0 = off): an objective done within
+    /// `return_radius` yards of one done earlier, its quest already in the log then, the route
+    /// having gone further than `return_away` yards in between. What `return_slack` cannot fix
+    /// after the search (a trip back worth more than a few minutes to avoid) is weighed in it.
+    pub return_weight: f64,
+    pub return_away: f64,
     /// How the character's class fares at each level, in levels of power over the average class
     /// (`overrides/class_power.toml`, by level, empty: 0), and how much its gear counts for what it
     /// takes on (1 = average). Set from the class of the request, not read from routing.toml.
@@ -632,6 +638,8 @@ impl Default for Params {
             tidy_radius: 100.0,
             return_slack: 300.0,
             return_radius: 200.0,
+            return_weight: 300.0,
+            return_away: 500.0,
             class_curve: Vec::new(),
             gear_dependence: 1.0,
             power_curve: Vec::new(),

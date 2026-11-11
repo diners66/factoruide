@@ -140,7 +140,12 @@ pub fn run(conn: &Connection, opts: &RouteOptions) -> Result<()> {
         b.missing_zone_quests,
         b.missing_profession_quests
     );
-    eprintln!("  dungeons: {} runs, {}", b.dungeon_runs, m(b.dungeons));
+    eprintln!(
+        "  dungeons: {} runs, {} | returns to an area {}",
+        b.dungeon_runs,
+        m(b.dungeons),
+        b.returns
+    );
     for r in &route.reputation {
         eprintln!(
             "  reputation {}: {} -> {} (goal {})",
