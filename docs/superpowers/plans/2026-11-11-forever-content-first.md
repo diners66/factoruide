@@ -191,3 +191,23 @@ Copy the chosen guide into the addon's `Data.lua` as was done for the seed-42 gu
 - [ ] **Step 4: Commit**
 
 `git commit -m "test: Forever's own quests in a real guide, by weight"`
+
+## Result (2026-11-11)
+
+Zev (undead warlock) 18-60, seed 42, effort 1:
+
+| Weight | Forever quests turned in (10s / 20s / 30s / 40s) | Usable ones left out | Time | Returns |
+|---|---|---|---|---|
+| 0 | 37 of 625 (6 / 12 / 18 / 1) | 35 | 92h06 | 16 |
+| 300 | 41 of 612 (6 / 14 / 20 / 1) | 31 | 91h03 | 18 |
+| 600 | 40 of 615 (6 / 13 / 20 / 1) | 32 | 91h28 | 17 |
+
+The default stays 300: 600 takes no more of them. The level window holds in all three (only
+the exempt warlock chain out of it). The weight moves little because this character can use
+only about 72 of the 1,173 quests, and the guide already took half: the others are crafting
+quests (a profession the guide does not level), other races' and classes', or in Forever's new
+zones (Zephras Isle, Riverglades, Shen'dralas, Darkspear Islands), most of which the planning
+log reports as having no reachable quest giver. That is data to complete (the zones' NPCs and
+the 615 Forever quests with no data at all), not weighting.
+
+The 300 guide is in the game's Factoruide_Data (the earlier Data.lua kept beside the run).
