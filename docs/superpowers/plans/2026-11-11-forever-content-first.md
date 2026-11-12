@@ -43,26 +43,26 @@
 - Produces: `Overrides::exclusive_quests: Vec<i64>`, sorted, from `exclusive_quests.toml` shaped as `quests = [ ... ]`, with a header comment saying how it was made and when.
 - Produces: `node scripts/forever-exclusive.mjs`: reads `data/forever.sqlite`, `data/classic.sqlite` and `data/tbc.sqlite` (unpacked by any `fg --edition <e>` command) with `node:sqlite`, applies the spec's definition, and writes the TOML with 12 IDs per line.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `forever_has_its_exclusive_quests`: `load(Edition::Forever).exclusive_quests` contains 78270 (Goblin Lockpicks) and 91723 (Delicate Instruments), does not contain 783 (A Threat Within, in every edition), and is sorted. `load(Edition::Classic)` and `load(Edition::Tbc)` have it empty.
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `cargo test -p fg-route forever_has_its_exclusive_quests`
 Expected: FAIL to compile (`exclusive_quests` unknown).
 
-- [ ] **Step 3: Write the script, generate the file, add the field**
+- [x] **Step 3: Write the script, generate the file, add the field**
 
 Run: `target/release/fg.exe --edition classic travel "Elwynn Forest,40,60" "Elwynn Forest,42,62"` and the same with `--edition tbc` if `data/classic.sqlite` / `data/tbc.sqlite` are missing, then `node scripts/forever-exclusive.mjs`.
 Expected: the script prints the count (about 1,150) and writes the file.
 
-- [ ] **Step 4: Run the test and the crate**
+- [x] **Step 4: Run the test and the crate**
 
 Run: `cargo test -p fg-route`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(data): the quests only WoW Forever has, listed from the editions' data"`
 
@@ -81,23 +81,23 @@ Expected: all PASS.
 - Consumes: `Overrides::exclusive_quests` (Task 1).
 - Produces: `Profile::exclusive_quests: Vec<i64>`, `Quest::exclusive_content: bool` (true when the quest's ID is in the list).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `forever_quests_are_marked_in_the_model`: with the `forever_druid` fixture, build `Overrides` as the test file does, then set `overrides.exclusive_quests` to the IDs of the first two quests of a first `job::prepare`. Prepare again: exactly those two quests have `exclusive_content`, and no other quest has it.
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `cargo test -p fg-route --test it forever_quests_are_marked`
 Expected: FAIL to compile (`exclusive_content` unknown).
 
-- [ ] **Step 3: Add `Profile::exclusive_quests`, carry it in `character.rs`, set `Quest::exclusive_content` where the quest overrides are applied**
+- [x] **Step 3: Add `Profile::exclusive_quests`, carry it in `character.rs`, set `Quest::exclusive_content` where the quest overrides are applied**
 
-- [ ] **Step 4: Run the crate's tests**
+- [x] **Step 4: Run the crate's tests**
 
 Run: `cargo test -p fg-route`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(route): the model marks the quests only WoW Forever has"`
 
@@ -116,7 +116,7 @@ Expected: all PASS.
 - Consumes: `Quest::exclusive_content` (Task 2).
 - Produces: `Params::exclusive_quest_weight: f64` (default 300.0), `Breakdown::missing_exclusive_quests: u32`, `Simulator::missing_exclusive_quests(&self, s: &State) -> usize`, which counts as the Global Constraints say. The score adds `missing_exclusive_quests * exclusive_quest_weight`. The CLI line gains `| Forever quests missing {n}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `forever_quests_left_out_cost_the_score`, built on `quests_at_start(3)` like the profession test (`p.profile.to_level = 20`):
 - quests 0 and 1 `exclusive_content = true`, with `exclusive_quest_weight = 300.0`;
@@ -127,19 +127,19 @@ Expected: all PASS.
 
 `old_requests_keep_the_forever_weight`: `serde_json::from_str::<Params>("{}")` has `exclusive_quest_weight == 300.0`.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p fg-route forever_quests_left_out old_requests_keep_the_forever`
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Implement the field, the count, the score and the CLI line**
+- [x] **Step 3: Implement the field, the count, the score and the CLI line**
 
-- [ ] **Step 4: Run the crate's tests and clippy**
+- [x] **Step 4: Run the crate's tests and clippy**
 
 Run: `cargo test -p fg-route && cargo clippy --all-targets`
 Expected: all PASS, no warnings. Upstream tests whose route changes because of the weight set `exclusive_quest_weight = 0.0` (list them in the commit message), as was done for `strict_levels`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "feat(route): guides take WoW Forever's own quests first (exclusive_quest_weight)"`
 
@@ -155,16 +155,16 @@ Expected: all PASS, no warnings. Upstream tests whose route changes because of t
 **Interfaces:**
 - Consumes: `Params::exclusive_quest_weight` (Task 3), serialized under that name.
 
-- [ ] **Step 1: Add the entry**
+- [x] **Step 1: Add the entry**
 
 Kind number, label "Quêtes propres à WoW Forever d'abord", unit "secondes par quête laissée", min 0, max 1800, step 60, help "Chaque quête qui n'existe que dans WoW Forever et que le guide laisse lui coûte ce temps : il les fait dès qu'elles sont sur le chemin, les anciennes quêtes comblent les trous. 0 : aucune préférence." Shown only for the Forever edition if the schema has a per-edition filter; otherwise always (it does nothing elsewhere).
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 Run (in `app/`): `npm run build && npm run lint && npm run check:i18n && npm test`
 Expected: no errors; add the translations `check:i18n` asks for.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 `git commit -m "feat(app): setting for Forever's own quests first"`
 
@@ -175,20 +175,20 @@ Expected: no errors; add the translations `check:i18n` asks for.
 **Files:**
 - Create: `scripts/check-exclusive.mjs`: reads a guide JSON and `overrides/forever/exclusive_quests.toml`, prints the exclusive quests turned in, by level band (0-9, 10s ... 60).
 
-- [ ] **Step 1: Generate three guides from the real profile**
+- [x] **Step 1: Generate three guides from the real profile**
 
 Run `fg route --race undead --class warlock --start <profile.json> --to-level 60 --effort 1` (the same seed each time, profile from `Factoruide_Profile.lua` as in the level-window plan), with `--param exclusive_quest_weight=0`, `=300` and `=600`, into separate `--routes` directories.
 
-- [ ] **Step 2: Check them**
+- [x] **Step 2: Check them**
 
 Run: `node scripts/check-exclusive.mjs <guide.json>` for each, and `node scripts/check-level-window.mjs` on the 300 guide.
 Expected: more exclusive quests at 300 than at 0, and more again at 600; the level window still holds (only the exempt class quests out of it). Write a table into this plan (exclusive quests by band, total time, returns) and pick the default: the higher value unless it costs more than about 3% of the 0-weight guide's time. Ledger the choice.
 
-- [ ] **Step 3: Install the chosen guide**
+- [x] **Step 3: Install the chosen guide**
 
 Copy the chosen guide into the addon's `Data.lua` as was done for the seed-42 guide (back up the current one first, next to it).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 `git commit -m "test: Forever's own quests in a real guide, by weight"`
 
